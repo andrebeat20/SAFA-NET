@@ -1,0 +1,66 @@
+📄 Product Requirements Document (PRD) - Revisi Arsitektur & Integrasi
+Nama Produk: Sistem Manajemen Penagihan SAFA.NET
+Platform Pengembangan: Antigravity (PWA)
+Database: Supabase
+Deployment: Vercel
+Status Dokumen: Draf V2 (Disetujui untuk Arsitektur)
+
+1. Arsitektur Teknologi (Tech Stack)
+Frontend/UI: Antigravity (untuk menghasilkan aplikasi web PWA yang responsif).
+
+Database & Autentikasi: Supabase (menggunakan PostgreSQL untuk menyimpan data secara aman).
+
+Hosting: Vercel (untuk deployment aplikasi web yang cepat dan ringan).
+
+Integrasi Pihak Ketiga: Google Sheets API (untuk sinkronisasi real-time ke laporan atasan).
+
+2. Logika Integrasi Real-Time (App ↔ Google Sheets)
+Sistem tidak akan membuat format laporan baru, melainkan akan bertindak sebagai "pengisi otomatis" ke dalam file "DATA GLOBAL PELANGGAN 2026" yang sudah ada di Google Drive.
+
+Alur Kerja (Workflow):
+
+Input Data: Petugas lapangan mencari nama pelanggan di aplikasi dan menekan tombol "Lunas" (Keliling/Transfer/Kantor).
+
+Penyimpanan Database: Aplikasi Antigravity mengirimkan data pembayaran tersebut ke database Supabase.
+
+Trigger Webhook/Edge Function: Segera setelah data di Supabase diperbarui, Supabase akan memicu Database Webhook atau Edge Function yang sudah dihubungkan dengan Google Sheets API.
+
+Pembaruan Spreadsheet: Google Sheets API akan secara otomatis mencari baris nama pelanggan tersebut di tab bulan yang sesuai (misal: tab "MEI") dan memperbarui sel "Status", "Metode", atau "Tanggal Bayar".
+
+Hasil Akhir: Atasan Anda dapat membuka Google Sheets di laptopnya kapan saja, melihat data yang bergerak secara real-time, dan langsung menekan tombol Print (Cetak) atau Download as Excel tanpa ada format yang berubah satu sel pun.
+
+3. Struktur Database di Supabase (Fokus Kompatibilitas Excel)
+Agar sinkronisasi ke format atasan tetap presisi, kita akan menyesuaikan skema database di Supabase agar bisa memetakan (mapping) data ke spreadsheet.
+
+Tabel pelanggan (Master Data): * id (UUID, Primary Key)
+
+no_urut_excel (Penting untuk mencocokkan baris di Excel)
+
+nama_pelanggan
+
+alamat
+
+paket_mbps
+
+harga_tagihan
+
+Tabel pembayaran_bulanan (Data Tagihan):
+
+id (UUID, Primary Key)
+
+pelanggan_id (Foreign Key)
+
+bulan_tagihan (Misal: "JANUARI", "FEBRUARI", agar sistem tahu harus mengedit tab/sheet yang mana di Google Sheets)
+
+status_bayar (Lunas/Belum)
+
+metode_bayar (Keliling/Transfer/Kantor)
+
+tanggal_bayar (Timestamp)
+
+4. Fitur Utama Tambahan
+Sistem Deteksi Bulan Berjalan: Aplikasi harus otomatis mendeteksi bulan saat ini (misal: sekarang Mei 2026), sehingga ketika petugas menekan "Lunas", data langsung ditembakkan ke tab "MEI.csv" atau sheet Mei di Google Drive.
+
+Tombol Sinkronisasi Manual (Opsional): Jika terjadi kegagalan jaringan atau API error, admin memiliki tombol "Sinkronkan Ulang ke Excel" di dashboard untuk mendorong ulang data dari Supabase ke Google Sheets.
+
+Dengan skema ini, atasan Anda tetap mendapatkan laporan Excel persis seperti yang mereka inginkan tanpa harus belajar sistem baru, sementara tim lapangan bisa bekerja cepat dengan HP mereka!

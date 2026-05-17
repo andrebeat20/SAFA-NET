@@ -1,0 +1,160 @@
+import React, { useState } from 'react';
+import { Wifi, LogIn, Lock, User, Loader2, Sun, Moon, Eye, EyeOff } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useAuth } from '../hooks/useAuth';
+
+export default function Login({ isDarkMode, toggleDarkMode }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const { login } = useAuth();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    await login(email, password);
+    setIsLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col justify-center px-6 py-12 relative overflow-hidden font-outfit transition-colors duration-500">
+      {/* Floating Theme Toggle */}
+      <button
+        type="button"
+        onClick={toggleDarkMode}
+        className="absolute top-6 right-6 p-3 rounded-2xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/50 dark:border-slate-800/50 text-slate-600 dark:text-slate-300 shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-300 backdrop-blur-md z-50 cursor-pointer"
+        aria-label="Toggle Theme"
+      >
+        {isDarkMode ? <Sun className="w-5 h-5 text-amber-500 animate-spin" style={{ animationDuration: '10s' }} /> : <Moon className="w-5 h-5 text-indigo-600" />}
+      </button>
+
+      {/* Background Decor */}
+      <div className="absolute top-[-10%] left-[-10%] w-80 h-80 bg-brand/10 dark:bg-brand/5 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-pulse-slow"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-80 h-80 bg-brand-light/20 dark:bg-brand-light/10 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-pulse-slow" style={{animationDelay: '2s'}}></div>
+      
+      <div className="relative z-10 w-full max-w-sm mx-auto">
+        {/* Brand Header */}
+        <div className="text-center mb-8">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.6, type: 'spring' }}
+            className="inline-flex items-center justify-center w-20 h-20 rounded-[24px] bg-gradient-to-tr from-brand via-brand to-brand-light text-white mb-5 shadow-xl shadow-brand/20 dark:shadow-none"
+          >
+            <Wifi className="w-10 h-10 animate-pulse" style={{ animationDuration: '2s' }} />
+          </motion.div>
+          
+          <motion.h1
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.5 }}
+            className="text-4xl font-extrabold text-[var(--text-primary)] tracking-tight transition-colors"
+          >
+            SAFA<span className="text-brand">.</span>NET
+          </motion.h1>
+          
+          <motion.p
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="mt-2 text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-[0.25em]"
+          >
+            Billing Management System
+          </motion.p>
+        </div>
+
+        {/* Login Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.6 }}
+          className="bg-white/70 dark:bg-slate-900/60 py-9 px-8 shadow-2xl rounded-[32px] border border-slate-200/30 dark:border-slate-800/30 backdrop-blur-xl transition-all"
+        >
+          <form onSubmit={handleLogin} className="space-y-6">
+            {/* ID Petugas Field */}
+            <div className="space-y-2">
+              <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">
+                ID Petugas / Email
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-slate-400 group-focus-within:text-brand transition-colors" />
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
+                  className="block w-full pl-11 pr-4 py-3.5 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand focus:bg-white dark:focus:bg-slate-950 transition-all text-[15px] font-medium disabled:opacity-50 outline-none"
+                  placeholder="Ketik email atau ID..."
+                />
+              </div>
+            </div>
+
+            {/* Password Field */}
+            <div className="space-y-2">
+              <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">
+                Kata Sandi
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-slate-400 group-focus-within:text-brand transition-colors" />
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
+                  className="block w-full pl-11 pr-12 py-3.5 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand focus:bg-white dark:focus:bg-slate-950 transition-all text-[15px] font-medium disabled:opacity-50 outline-none"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Login Button */}
+            <div className="pt-2">
+              <motion.button
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                type="submit"
+                disabled={isLoading}
+                className="w-full flex justify-center items-center py-3.5 px-4 rounded-2xl shadow-lg shadow-brand/10 dark:shadow-none text-[15px] font-bold tracking-wider text-white bg-gradient-to-r from-brand to-brand-dark hover:brightness-110 transition-all disabled:opacity-70 disabled:pointer-events-none cursor-pointer"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <LogIn className="w-5 h-5 mr-3" />
+                    MASUK
+                  </>
+                )}
+              </motion.button>
+            </div>
+          </form>
+          
+          {/* Elegant Hints */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="mt-8 text-center"
+          >
+            <span className="inline-block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-relaxed">
+              💡 petunjuk: ketik <span className="text-brand font-extrabold">"admin"</span>, <span className="text-brand font-extrabold">"teknisi"</span>, atau <span className="text-brand font-extrabold">"owner"</span> untuk demo.
+            </span>
+          </motion.div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}

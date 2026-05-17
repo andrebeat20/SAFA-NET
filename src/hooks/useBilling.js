@@ -94,16 +94,90 @@ export function useBilling() {
       description: `${customer.name} - ${paymentMethod} (${currentMonthName})`
     });
 
-    console.log(`Triggering Sync to Google Sheets: Row ${customer.no_urut_excel} in Sheet ${currentMonthName}`);
+    // 3. Background Sync to Google Sheets Web App
+    const syncUrl = import.meta.env.VITE_SHEETS_SYNC_URL;
+    if (syncUrl) {
+      fetch(syncUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8' // Avoid CORS preflight block on Google Apps Script
+        },
+        body: JSON.stringify({
+          no_urut_excel: customer.no_urut_excel,
+          amount: customer.price,
+          method: paymentMethod,
+          bulan_tagihan: currentMonthName
+        })
+      })
+      .then(res => res.json())
+      .then(resData => {
+        if (resData.status === 'success') {
+          toast.success('Google Sheets Berhasil Diperbarui!');
+        } else {
+          console.error('Sheets Sync Error:', resData.message);
+          toast.error('Gagal Sinkronisasi Google Sheets: ' + resData.message);
+        }
+      })
+      .catch(err => {
+        console.error('Google Sheets Sync Failed:', err);
+        toast.error('Gagal terhubung ke Google Sheets');
+      });
+    }
   };
 
   const manualSync = async () => {
     setIsSyncing(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsSyncing(false);
-    toast.success('Sinkronisasi Excel Berhasil', {
-      description: `Data telah diperbarui di Google Sheets untuk bulan ${currentMonthName}`
-    });
+    
+    // Find all transactions recorded for the current selected month
+    const activeMonthTx = transactions.filter(t => t.bulan_tagihan === currentMonthName);
+    
+    if (activeMonthTx.length === 0) {
+      toast.info('Tidak ada transaksi untuk disinkronkan bulan ini');
+      setIsSyncing(false);
+      return;
+    }
+
+    const syncUrl = import.meta.env.VITE_SHEETS_SYNC_URL;
+    if (!syncUrl) {
+      toast.error('URL Sinkronisasi Google Sheets belum dikonfigurasi');
+      setIsSyncing(false);
+      return;
+    }
+
+    try {
+      let successCount = 0;
+      await Promise.all(activeMonthTx.map(async (t) => {
+        const c = customers.find(cust => cust.id === t.customer_id);
+        if (!c) return;
+
+        try {
+          const res = await fetch(syncUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              no_urut_excel: c.no_urut_excel,
+              amount: t.amount,
+              method: t.method,
+              bulan_tagihan: currentMonthName
+            })
+          });
+          const resData = await res.json();
+          if (resData.status === 'success') {
+            successCount++;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }));
+
+      toast.success('Sinkronisasi Selesai', {
+        description: `Berhasil memperbarui ${successCount} baris di Google Sheets.`
+      });
+    } catch (err) {
+      toast.error('Gagal menjalankan sinkronisasi');
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const getFinancialSummary = () => {

@@ -106,7 +106,8 @@ export function useBilling() {
           no_urut_excel: customer.no_urut_excel,
           amount: customer.price,
           method: paymentMethod,
-          bulan_tagihan: currentMonthName
+          bulan_tagihan: currentMonthName,
+          customer_name: customer.name
         })
       })
       .then(res => res.json())

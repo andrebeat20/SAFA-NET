@@ -123,8 +123,22 @@ function App() {
           isOpen={!!selectedForDetail}
           onClose={() => setSelectedForDetail(null)}
           customer={selectedForDetail}
-          onUpdate={(updated) => {
-            console.log('Update customer:', updated);
+          onUpdate={async (updated) => {
+            const success = await updateCustomer(updated.id, {
+              name: updated.name,
+              address: updated.address,
+              phone: updated.phone,
+              package: updated.package,
+              price: updated.price
+            });
+            if (success) setSelectedForDetail(null);
+          }}
+          onDelete={async (id) => {
+            const confirmDelete = window.confirm('Apakah Anda yakin ingin menghapus pelanggan ini beserta seluruh riwayat pembayarannya?');
+            if (confirmDelete) {
+              const success = await deleteCustomer(id);
+              if (success) setSelectedForDetail(null);
+            }
           }}
         />
         <Toaster position="top-center" richColors />
@@ -216,9 +230,22 @@ function App() {
         isOpen={!!selectedForDetail}
         onClose={() => setSelectedForDetail(null)}
         customer={selectedForDetail}
-        onUpdate={(updated) => {
-          // In a real app, call API here
-          console.log('Update customer:', updated);
+        onUpdate={async (updated) => {
+          const success = await updateCustomer(updated.id, {
+            name: updated.name,
+            address: updated.address,
+            phone: updated.phone,
+            package: updated.package,
+            price: updated.price
+          });
+          if (success) setSelectedForDetail(null);
+        }}
+        onDelete={async (id) => {
+          const confirmDelete = window.confirm('Apakah Anda yakin ingin menghapus pelanggan ini beserta seluruh riwayat pembayarannya?');
+          if (confirmDelete) {
+            const success = await deleteCustomer(id);
+            if (success) setSelectedForDetail(null);
+          }
         }}
       />
       

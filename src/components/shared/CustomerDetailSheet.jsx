@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, MapPin, Phone, Package, CreditCard, Save, Trash2, Calendar } from 'lucide-react';
 
-export default function CustomerDetailSheet({ isOpen, onClose, customer, onUpdate }) {
+export default function CustomerDetailSheet({ isOpen, onClose, customer, onUpdate, onDelete }) {
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -191,7 +191,8 @@ export default function CustomerDetailSheet({ isOpen, onClose, customer, onUpdat
             <div className="p-8 bg-[var(--bg-secondary)] border-t border-[var(--border-color)] flex gap-4 transition-colors">
                <button 
                 type="button"
-                className="flex-1 flex items-center justify-center gap-2 py-4.5 rounded-[22px] bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 font-black uppercase tracking-widest hover:bg-rose-100 active:scale-95 transition-all"
+                onClick={() => onDelete(customer.id)}
+                className="flex-1 flex items-center justify-center gap-2 py-4 rounded-[22px] bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 font-black uppercase tracking-widest hover:bg-rose-100 active:scale-95 transition-all"
                >
                  <Trash2 className="w-5 h-5" />
                  Hapus
@@ -199,7 +200,7 @@ export default function CustomerDetailSheet({ isOpen, onClose, customer, onUpdat
                <button 
                 form="customer-form"
                 type="submit"
-                className="flex-[2] flex items-center justify-center gap-3 py-4.5 rounded-[22px] bg-brand text-white font-black uppercase tracking-widest shadow-xl shadow-brand/30 hover:bg-brand-dark active:scale-95 transition-all"
+                className="flex-[2] flex items-center justify-center gap-3 py-4 rounded-[22px] bg-brand text-white font-black uppercase tracking-widest shadow-xl shadow-brand/30 hover:bg-brand-dark active:scale-95 transition-all"
                >
                  <Save className="w-5 h-5" />
                  Simpan Perubahan

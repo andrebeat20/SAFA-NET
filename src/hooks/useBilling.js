@@ -246,6 +246,56 @@ export function useBilling() {
     return { totalTagihan, terkumpul, sisaPiutang, persentase, breakdown, totalCustomers };
   };
 
+  const updateCustomer = async (customerId, updatedFields) => {
+    // Optimistic UI Update
+    setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, ...updatedFields } : c));
+
+    const { error } = await supabase
+      .from('customers')
+      .update(updatedFields)
+      .eq('id', customerId);
+
+    if (error) {
+      toast.error('Gagal menyimpan perubahan');
+      fetchData(); // revert
+      return false;
+    }
+
+    toast.success('Perubahan pelanggan berhasil disimpan');
+    fetchData(); // sync
+    return true;
+  };
+
+  const deleteCustomer = async (customerId) => {
+    toast.loading('Menghapus pelanggan...', { id: 'delete-customer' });
+
+    // Hapus transaksi pelanggan terlebih dahulu untuk menjaga relasi data
+    const { error: txError } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('customer_id', customerId);
+
+    if (txError) {
+      toast.error('Gagal menghapus riwayat transaksi', { id: 'delete-customer' });
+      return false;
+    }
+
+    // Hapus pelanggan dari tabel customers
+    const { error: custError } = await supabase
+      .from('customers')
+      .delete()
+      .eq('id', customerId);
+
+    if (custError) {
+      toast.error('Gagal menghapus pelanggan', { id: 'delete-customer' });
+      return false;
+    }
+
+    toast.success('Pelanggan berhasil dihapus', { id: 'delete-customer' });
+    fetchData();
+    return true;
+  };
+
   return {
     customers,
     transactions,
@@ -255,6 +305,8 @@ export function useBilling() {
     setSelectedMonth,
     handlePayment,
     manualSync,
-    getFinancialSummary
+    getFinancialSummary,
+    updateCustomer,
+    deleteCustomer
   };
 }

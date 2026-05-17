@@ -32,7 +32,9 @@ function App() {
     setSelectedMonth,
     handlePayment, 
     manualSync,
-    getFinancialSummary 
+    getFinancialSummary,
+    updateCustomer,
+    deleteCustomer
   } = useBilling();
 
   React.useEffect(() => {

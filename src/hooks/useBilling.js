@@ -145,9 +145,11 @@ export function useBilling() {
         return;
       }
 
-      const customersToInsert = [];
+      const parsedLines = [];
+      let headerIndex = -1;
 
-      for (let i = 1; i < lines.length; i++) {
+      // Parse seluruh baris terlebih dahulu
+      for (let i = 0; i < lines.length; i++) {
         const columns = [];
         let current = '';
         let inQuotes = false;
@@ -165,11 +167,31 @@ export function useBilling() {
           }
         }
         columns.push(current.trim());
+        parsedLines.push(columns);
 
-        // Lewati jika kolom Nama kosong
+        // Cari baris header utama yang kolom pertamanya adalah "No"
+        if (columns[0] && columns[0].toLowerCase() === 'no') {
+          headerIndex = i;
+        }
+      }
+
+      if (headerIndex === -1) {
+        toast.error('Format tabel tidak valid: Kolom "No" tidak ditemukan', { id: 'sheet-sync' });
+        setIsSyncing(false);
+        return;
+      }
+
+      const customersToInsert = [];
+
+      // Mulai membaca data hanya dari baris setelah header utama
+      for (let i = headerIndex + 1; i < parsedLines.length; i++) {
+        const columns = parsedLines[i];
+
+        // Lewati jika kolom Nama (indeks 1) kosong atau berisi kata "TOTAL"
         if (!columns[1]) continue;
+        if (columns[1].toLowerCase().includes('total')) continue;
 
-        const noUrut = parseInt(columns[0]) || i;
+        const noUrut = parseInt(columns[0]) || (i - headerIndex);
         const nama = columns[1];
         const alamat = columns[2] || '';
         const paket = columns[3] || '10 Mbps';

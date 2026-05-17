@@ -34,7 +34,8 @@ function App() {
     manualSync,
     getFinancialSummary,
     updateCustomer,
-    deleteCustomer
+    deleteCustomer,
+    generateMonthlyTagihan
   } = useBilling();
 
   React.useEffect(() => {
@@ -104,6 +105,10 @@ function App() {
               <Tagihan 
                 customers={customers} 
                 onPayment={handlePayment} 
+                currentMonth={currentMonth}
+                onGenerate={generateMonthlyTagihan}
+                isSyncing={isSyncing}
+                isAdmin={false}
               />
             ) : (
               <FieldDashboard 
@@ -205,6 +210,10 @@ function App() {
             <Tagihan 
               customers={customers} 
               onPayment={handlePayment} 
+              currentMonth={currentMonth}
+              onGenerate={generateMonthlyTagihan}
+              isSyncing={isSyncing}
+              isAdmin={true}
             />
           )}
           {activeTab === 'laporan' && (

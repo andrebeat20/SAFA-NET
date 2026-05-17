@@ -165,6 +165,116 @@ function doPost(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
     
+    // --- AKSI 6: GENERATE TAGIHAN BULAN BARU (KLONING TAB) ---
+    if (action === "generate_month") {
+      var targetSheetName = data.sheet_name; // Contoh: "JUNI 2026"
+      var existingSheet = ss.getSheetByName(targetSheetName);
+      
+      if (existingSheet) {
+        return ContentService.createTextOutput(JSON.stringify({
+          status: "error",
+          message: "Tab " + targetSheetName + " sudah ada di Spreadsheet!"
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      // Gunakan tab pertama sebagai basis cetakan (template / bulan sebelumnya)
+      var sourceSheet = sheets[0];
+      if (!sourceSheet) {
+        return ContentService.createTextOutput(JSON.stringify({
+          status: "error",
+          message: "Tidak ditemukan tab basis/template di Spreadsheet!"
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      // Duplikasi tab ke sheet baru
+      var newSheet = sourceSheet.copyTo(ss);
+      newSheet.setName(targetSheetName);
+      ss.setActiveSheet(newSheet);
+      ss.moveActiveSheet(1); // Taruh di tab pertama agar rapi
+      
+      // 1. Update teks Banner Periode di baris 2 (merujuk ke nama bulan baru)
+      newSheet.getRange(2, 1).setValue("Periode : " + targetSheetName);
+      
+      var lastRow = newSheet.getLastRow();
+      
+      // 2. Cari baris header utama "No"
+      var allValues = newSheet.getRange(1, 1, lastRow, newSheet.getLastColumn()).getValues();
+      var headerIndex = -1;
+      for (var i = 0; i < allValues.length; i++) {
+        var firstCol = allValues[i][0];
+        if (firstCol && firstCol.toString().toLowerCase() === "no") {
+          headerIndex = i;
+          break;
+        }
+      }
+      
+      if (headerIndex === -1) {
+        return ContentService.createTextOutput(JSON.stringify({
+          status: "error",
+          message: "Gagal menduplikasi: Kolom 'No' tidak ditemukan pada tab sumber"
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      // 3. Bersihkan pembayaran dan setel ulang "BELUM BAYAR" di tab baru
+      for (var r = headerIndex + 2; r <= lastRow; r++) {
+        // Lewati jika kolom nama pelanggan kosong atau berisi total
+        var nameCell = newSheet.getRange(r, 2).getValue();
+        if (!nameCell || nameCell.toString().toLowerCase().indexOf("total") !== -1) continue;
+        
+        var price = newSheet.getRange(r, 5).getValue() || 0; // Kolom E (Harga)
+        
+        newSheet.getRange(r, 7).setValue("");     // Kolom G (Keterangan)
+        newSheet.getRange(r, 8).setValue("");     // Kolom H (KELILING)
+        newSheet.getRange(r, 9).setValue("");     // Kolom I (KANTOR)
+        newSheet.getRange(r, 10).setValue("");    // Kolom J (TRANSFER)
+        newSheet.getRange(r, 11).setValue(price); // Kolom K (BELUM BAYAR = Nominal Harga)
+      }
+      
+      // 4. Hapus riwayat setoran harian SETORAN TAHAP (Kolom M ke kanan, baris 4 ke bawah)
+      if (lastRow >= 4) {
+        var rangeM_U = newSheet.getRange(4, 13, lastRow - 3, 9);
+        rangeM_U.clearContent();
+        rangeM_U.clearFormat();
+        try {
+          rangeM_U.breakApart(); // Pisahkan jika ada sel yang ter-merge
+        } catch(e) {}
+      }
+      
+      // 5. Ambil data pelanggan baru hasil generate untuk dikirim balik ke Supabase
+      var newCustomers = [];
+      var updatedValues = newSheet.getRange(1, 1, lastRow, newSheet.getLastColumn()).getValues();
+      
+      for (var i = headerIndex + 1; i < updatedValues.length; i++) {
+        var columns = updatedValues[i];
+        if (!columns[1]) continue;
+        if (columns[1].toString().toLowerCase().indexOf("total") !== -1) continue;
+        
+        var noUrut = parseInt(columns[0]) || (i - headerIndex);
+        var nama = columns[1].toString();
+        var alamat = columns[2] ? columns[2].toString() : "";
+        var paket = columns[3] ? columns[3].toString() : "10 Mbps";
+        var hargaRaw = columns[4] ? columns[4].toString() : "0";
+        var harga = parseInt(hargaRaw.replace(/[^\d]/g, "")) || 0;
+        var noHp = columns[5] ? columns[5].toString() : "";
+        
+        newCustomers.push({
+          no_urut_excel: noUrut,
+          name: nama,
+          address: alamat,
+          package: paket,
+          price: harga,
+          phone: noHp,
+          status: "Belum Bayar" // Semua baru digenerate jadi Belum Bayar
+        });
+      }
+      
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "success",
+        data: newCustomers,
+        message: "Berhasil mengenerate tab baru " + targetSheetName + "!"
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
     // --- AKSI 3: CATAT PEMBAYARAN & SINKRONKAN SETORAN TAHAP ---
     var sheetName = data.bulan_tagihan; // Contoh: "MEI"
     var price = data.amount;

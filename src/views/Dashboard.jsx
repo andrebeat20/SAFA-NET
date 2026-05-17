@@ -2,7 +2,7 @@ import React from 'react';
 import StatCard from '../components/dashboard/StatCard';
 import { ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 
-export default function Dashboard({ summary, transactions }) {
+export default function Dashboard({ summary, transactions, onViewAll }) {
   return (
     <div className="pb-24 pt-6 px-4">
       {/* Financial Summary */}
@@ -44,7 +44,12 @@ export default function Dashboard({ summary, transactions }) {
             <h2 className="text-lg font-bold text-[var(--text-primary)] transition-colors">Aktivitas Terbaru</h2>
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">Pembayaran yang masuk</p>
           </div>
-          <button className="text-sm font-bold text-brand hover:text-brand-dark transition-colors">Lihat Semua</button>
+          <button 
+            onClick={onViewAll}
+            className="text-sm font-bold text-brand hover:text-brand-dark transition-colors"
+          >
+            Lihat Semua
+          </button>
         </div>
         
         <div className="space-y-3">

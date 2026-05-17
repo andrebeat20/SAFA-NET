@@ -176,7 +176,11 @@ function App() {
         
         <main className="flex-1 overflow-y-auto animate-fade-in-up">
           {activeTab === 'home' && (
-            <Dashboard summary={summary} transactions={transactions} />
+            <Dashboard 
+              summary={summary} 
+              transactions={transactions} 
+              onViewAll={() => setActiveTab('laporan')} 
+            />
           )}
           {activeTab === 'pelanggan' && (
             <Customers customers={customers} onCustomerClick={handleDetailClick} />

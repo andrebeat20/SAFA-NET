@@ -20,10 +20,15 @@ export default function LaporanActions({ onSync, isSyncing }) {
         {isSyncing ? 'Menyinkronkan...' : 'Sinkronkan Ulang ke Excel'}
       </button>
       
-      <button className="w-full flex items-center justify-center gap-3 py-4.5 rounded-[22px] font-black uppercase tracking-widest border-2 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all">
+      <a 
+        href="https://docs.google.com/spreadsheets/d/1a3fOlaFFxjZzWG-ycD4GPlHmjTgkd7djcfmJ_E3NKJM/export?exportFormat=pdf&format=pdf&size=A4&portrait=true&fitw=true&gridlines=true"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-full flex items-center justify-center gap-3 py-4.5 rounded-[22px] font-black uppercase tracking-widest border-2 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all text-center"
+      >
         <Download className="w-5 h-5" />
         Download Rekap PDF
-      </button>
+      </a>
     </div>
   );
 }

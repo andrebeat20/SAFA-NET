@@ -3,6 +3,9 @@ import { RefreshCcw, Download } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function LaporanActions({ onSync, isSyncing }) {
+  const syncUrl = import.meta.env.VITE_SHEETS_SYNC_URL;
+  const pdfDownloadUrl = syncUrl || "https://docs.google.com/spreadsheets/d/1a3fOlaFFxjZzWG-ycD4GPlHmjTgkd7djcfmJ_E3NKJM/export?exportFormat=pdf&format=pdf&size=a4&portrait=true&scale=5&spct=0.38&top_margin=0.25&bottom_margin=0.25&left_margin=0.25&right_margin=0.25&gridlines=true";
+
   return (
     <div className="space-y-4 px-1">
       <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4 px-1">Integrasi Google Sheets</h3>
@@ -21,10 +24,10 @@ export default function LaporanActions({ onSync, isSyncing }) {
       </button>
       
       <a 
-        href="https://docs.google.com/spreadsheets/d/1a3fOlaFFxjZzWG-ycD4GPlHmjTgkd7djcfmJ_E3NKJM/export?exportFormat=pdf&format=pdf&size=A4&portrait=true&fitw=true&gridlines=true"
+        href={pdfDownloadUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="w-full flex items-center justify-center gap-3 py-4.5 rounded-[22px] font-black uppercase tracking-widest border-2 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all text-center"
+        className="w-full flex items-center justify-center gap-3 py-4.5 rounded-[22px] font-black uppercase tracking-widest border-2 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all text-center animate-fade-in"
       >
         <Download className="w-5 h-5" />
         Download Rekap PDF

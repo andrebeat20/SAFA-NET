@@ -127,54 +127,98 @@ export function useBilling() {
 
   const manualSync = async () => {
     setIsSyncing(true);
-    
-    // Find all transactions recorded for the current selected month
-    const activeMonthTx = transactions.filter(t => t.bulan_tagihan === currentMonthName);
-    
-    if (activeMonthTx.length === 0) {
-      toast.info('Tidak ada transaksi untuk disinkronkan bulan ini');
-      setIsSyncing(false);
-      return;
-    }
+    toast.loading('Menyelaraskan data dari Google Sheets...', { id: 'sheet-sync' });
 
-    const syncUrl = import.meta.env.VITE_SHEETS_SYNC_URL;
-    if (!syncUrl) {
-      toast.error('URL Sinkronisasi Google Sheets belum dikonfigurasi');
-      setIsSyncing(false);
-      return;
-    }
+    const sheetId = '1a3fOlaFFxjZzWG-ycD4GPlHmjTgkd7djcfmJ_E3NKJM';
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
 
     try {
-      let successCount = 0;
-      await Promise.all(activeMonthTx.map(async (t) => {
-        const c = customers.find(cust => cust.id === t.customer_id);
-        if (!c) return;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Gagal mengunduh data Google Sheets');
 
-        try {
-          const res = await fetch(syncUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              no_urut_excel: c.no_urut_excel,
-              amount: t.amount,
-              method: t.method,
-              bulan_tagihan: currentMonthName
-            })
-          });
-          const resData = await res.json();
-          if (resData.status === 'success') {
-            successCount++;
+      const csvText = await res.text();
+      const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+
+      if (lines.length < 2) {
+        toast.error('Data Google Sheets kosong atau tidak valid', { id: 'sheet-sync' });
+        setIsSyncing(false);
+        return;
+      }
+
+      const customersToInsert = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const columns = [];
+        let current = '';
+        let inQuotes = false;
+        const line = lines[i];
+
+        for (let j = 0; j < line.length; j++) {
+          const char = line[j];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            columns.push(current.trim());
+            current = '';
+          } else {
+            current += char;
           }
-        } catch (e) {
-          console.error(e);
         }
-      }));
+        columns.push(current.trim());
 
-      toast.success('Sinkronisasi Selesai', {
-        description: `Berhasil memperbarui ${successCount} baris di Google Sheets.`
+        // Lewati jika kolom Nama kosong
+        if (!columns[1]) continue;
+
+        const noUrut = parseInt(columns[0]) || i;
+        const nama = columns[1];
+        const alamat = columns[2] || '';
+        const paket = columns[3] || '10 Mbps';
+        const hargaRaw = columns[4] || '0';
+        const harga = parseInt(hargaRaw.replace(/[^\d]/g, '')) || 0;
+        const noHp = columns[5] || '';
+        const keterangan = (columns[6] || '').toUpperCase();
+        const status = keterangan.includes('BELUM BAYAR') ? 'Belum Bayar' : 'Lunas';
+
+        customersToInsert.push({
+          no_urut_excel: noUrut,
+          name: nama,
+          address: alamat,
+          package: paket,
+          price: harga,
+          phone: noHp,
+          status: status
+        });
+      }
+
+      // 1. Hapus pelanggan lama di Supabase
+      const { error: deleteCustomersError } = await supabase
+        .from('customers')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+
+      if (deleteCustomersError) throw deleteCustomersError;
+
+      // Hapus transaksi lama juga agar selaras
+      await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+      // 2. Masukkan data asli baru dari Google Sheets
+      const { error: insertError } = await supabase
+        .from('customers')
+        .insert(customersToInsert);
+
+      if (insertError) throw insertError;
+
+      // 3. Muat ulang data terbaru agar UI langsung ter-update secara instan
+      await fetchData();
+
+      toast.success('Sinkronisasi Sukses!', {
+        id: 'sheet-sync',
+        description: `Telah menyelaraskan ${customersToInsert.length} data pelanggan asli ke database Supabase Anda.`
       });
-    } catch (err) {
-      toast.error('Gagal menjalankan sinkronisasi');
+
+    } catch (error) {
+      console.error(error);
+      toast.error('Gagal Sinkronisasi: ' + error.message, { id: 'sheet-sync' });
     } finally {
       setIsSyncing(false);
     }

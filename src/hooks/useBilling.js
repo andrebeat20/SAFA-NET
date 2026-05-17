@@ -247,6 +247,9 @@ export function useBilling() {
   };
 
   const updateCustomer = async (customerId, updatedFields) => {
+    const originalCustomer = customers.find(c => c.id === customerId);
+    if (!originalCustomer) return false;
+
     // Optimistic UI Update
     setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, ...updatedFields } : c));
 
@@ -263,10 +266,41 @@ export function useBilling() {
 
     toast.success('Perubahan pelanggan berhasil disimpan');
     fetchData(); // sync
+
+    // Background Sync Edit to Google Sheets
+    const syncUrl = import.meta.env.VITE_SHEETS_SYNC_URL;
+    if (syncUrl) {
+      fetch(syncUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'edit',
+          no_urut_excel: originalCustomer.no_urut_excel,
+          name: updatedFields.name,
+          address: updatedFields.address,
+          package: updatedFields.package,
+          price: updatedFields.price,
+          phone: updatedFields.phone
+        })
+      })
+      .then(res => res.json())
+      .then(resData => {
+        if (resData.status === 'success') {
+          toast.success('Perubahan disinkronkan ke Google Sheets!');
+        } else {
+          console.error('Sheets Edit Sync Error:', resData.message);
+        }
+      })
+      .catch(err => console.error('Failed to sync edit to Sheets:', err));
+    }
+
     return true;
   };
 
   const deleteCustomer = async (customerId) => {
+    const originalCustomer = customers.find(c => c.id === customerId);
+    if (!originalCustomer) return false;
+
     toast.loading('Menghapus pelanggan...', { id: 'delete-customer' });
 
     // Hapus transaksi pelanggan terlebih dahulu untuk menjaga relasi data
@@ -293,6 +327,29 @@ export function useBilling() {
 
     toast.success('Pelanggan berhasil dihapus', { id: 'delete-customer' });
     fetchData();
+
+    // Background Sync Delete to Google Sheets
+    const syncUrl = import.meta.env.VITE_SHEETS_SYNC_URL;
+    if (syncUrl) {
+      fetch(syncUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'delete',
+          no_urut_excel: originalCustomer.no_urut_excel
+        })
+      })
+      .then(res => res.json())
+      .then(resData => {
+        if (resData.status === 'success') {
+          toast.success('Penghapusan disinkronkan ke Google Sheets!');
+        } else {
+          console.error('Sheets Delete Sync Error:', resData.message);
+        }
+      })
+      .catch(err => console.error('Failed to sync delete to Sheets:', err));
+    }
+
     return true;
   };
 

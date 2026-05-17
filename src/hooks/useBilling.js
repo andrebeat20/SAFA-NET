@@ -46,8 +46,12 @@ export function useBilling() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (selectedMonth) {
+      manualSync(selectedMonth);
+    } else {
+      fetchData();
+    }
+  }, [selectedMonth]);
 
   const handlePayment = async (customerId, paymentMethod) => {
     const customer = customers.find(c => c.id === customerId);
@@ -126,92 +130,37 @@ export function useBilling() {
     }
   };
 
-  const manualSync = async () => {
+  const manualSync = async (monthName = selectedMonth) => {
     setIsSyncing(true);
-    toast.loading('Menyelaraskan data dari Google Sheets...', { id: 'sheet-sync' });
+    const syncUrl = import.meta.env.VITE_SHEETS_SYNC_URL;
+    if (!syncUrl) {
+      toast.error('URL Sinkronisasi Google Sheets tidak ditemukan di .env', { id: 'sheet-sync' });
+      setIsSyncing(false);
+      return;
+    }
 
-    const sheetId = '1a3fOlaFFxjZzWG-ycD4GPlHmjTgkd7djcfmJ_E3NKJM';
-    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
+    toast.loading(`Menyelaraskan data untuk ${monthName}...`, { id: 'sheet-sync' });
 
     try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Gagal mengunduh data Google Sheets');
+      const res = await fetch(syncUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify({
+          action: "fetch_sheet",
+          sheet_name: monthName
+        })
+      });
 
-      const csvText = await res.text();
-      const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+      if (!res.ok) throw new Error('Gagal menghubungi Google Sheets Web App');
+      const result = await res.json();
 
-      if (lines.length < 2) {
-        toast.error('Data Google Sheets kosong atau tidak valid', { id: 'sheet-sync' });
-        setIsSyncing(false);
-        return;
+      if (result.status === "error") {
+        throw new Error(result.message || 'Gagal mengambil data dari Google Sheets');
       }
 
-      const parsedLines = [];
-      let headerIndex = -1;
-
-      // Parse seluruh baris terlebih dahulu
-      for (let i = 0; i < lines.length; i++) {
-        const columns = [];
-        let current = '';
-        let inQuotes = false;
-        const line = lines[i];
-
-        for (let j = 0; j < line.length; j++) {
-          const char = line[j];
-          if (char === '"') {
-            inQuotes = !inQuotes;
-          } else if (char === ',' && !inQuotes) {
-            columns.push(current.trim());
-            current = '';
-          } else {
-            current += char;
-          }
-        }
-        columns.push(current.trim());
-        parsedLines.push(columns);
-
-        // Cari baris header utama yang kolom pertamanya adalah "No"
-        if (columns[0] && columns[0].toLowerCase() === 'no') {
-          headerIndex = i;
-        }
-      }
-
-      if (headerIndex === -1) {
-        toast.error('Format tabel tidak valid: Kolom "No" tidak ditemukan', { id: 'sheet-sync' });
-        setIsSyncing(false);
-        return;
-      }
-
-      const customersToInsert = [];
-
-      // Mulai membaca data hanya dari baris setelah header utama
-      for (let i = headerIndex + 1; i < parsedLines.length; i++) {
-        const columns = parsedLines[i];
-
-        // Lewati jika kolom Nama (indeks 1) kosong atau berisi kata "TOTAL"
-        if (!columns[1]) continue;
-        if (columns[1].toLowerCase().includes('total')) continue;
-
-        const noUrut = parseInt(columns[0]) || (i - headerIndex);
-        const nama = columns[1];
-        const alamat = columns[2] || '';
-        const paket = columns[3] || '10 Mbps';
-        const hargaRaw = columns[4] || '0';
-        const harga = parseInt(hargaRaw.replace(/[^\d]/g, '')) || 0;
-        const noHp = columns[5] || '';
-        const keterangan = (columns[6] || '').toUpperCase();
-        const status = keterangan.includes('BELUM BAYAR') ? 'Belum Bayar' : 'Lunas';
-
-        customersToInsert.push({
-          no_urut_excel: noUrut,
-          name: nama,
-          address: alamat,
-          package: paket,
-          price: harga,
-          phone: noHp,
-          status: status
-        });
-      }
+      const customersToInsert = result.data || [];
 
       // 1. Hapus pelanggan lama di Supabase
       const { error: deleteCustomersError } = await supabase
@@ -224,20 +173,28 @@ export function useBilling() {
       // Hapus transaksi lama juga agar selaras
       await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
-      // 2. Masukkan data asli baru dari Google Sheets
-      const { error: insertError } = await supabase
-        .from('customers')
-        .insert(customersToInsert);
+      // 2. Masukkan data asli baru dari Google Sheets (jika ada)
+      if (customersToInsert.length > 0) {
+        const { error: insertError } = await supabase
+          .from('customers')
+          .insert(customersToInsert);
 
-      if (insertError) throw insertError;
+        if (insertError) throw insertError;
+      }
 
       // 3. Muat ulang data terbaru agar UI langsung ter-update secara instan
       await fetchData();
 
-      toast.success('Sinkronisasi Sukses!', {
-        id: 'sheet-sync',
-        description: `Telah menyelaraskan ${customersToInsert.length} data pelanggan asli ke database Supabase Anda.`
-      });
+      if (customersToInsert.length > 0) {
+        toast.success('Sinkronisasi Sukses!', {
+          id: 'sheet-sync',
+          description: `Telah menyelaraskan ${customersToInsert.length} data pelanggan bulan ${monthName} ke database.`
+        });
+      } else {
+        toast.success(`Tab bulan ${monthName} kosong, data dikosongkan.`, {
+          id: 'sheet-sync'
+        });
+      }
 
     } catch (error) {
       console.error(error);

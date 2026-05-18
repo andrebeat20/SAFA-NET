@@ -204,6 +204,76 @@ export function useBilling() {
     }
   };
 
+  const generateMonthlyTagihan = async (monthName = selectedMonth) => {
+    setIsSyncing(true);
+    const syncUrl = import.meta.env.VITE_SHEETS_SYNC_URL;
+    if (!syncUrl) {
+      toast.error('URL Sinkronisasi Google Sheets tidak ditemukan di .env', { id: 'sheet-gen' });
+      setIsSyncing(false);
+      return false;
+    }
+
+    toast.loading(`Sedang mengenerate tagihan bulan ${monthName}...`, { id: 'sheet-gen' });
+
+    try {
+      const res = await fetch(syncUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify({
+          action: "generate_month",
+          sheet_name: monthName
+        })
+      });
+
+      if (!res.ok) throw new Error('Gagal menghubungi Google Sheets Web App');
+      const result = await res.json();
+
+      if (result.status === "error") {
+        throw new Error(result.message || 'Gagal mengenerate data dari Google Sheets');
+      }
+
+      const customersToInsert = result.data || [];
+
+      // 1. Hapus pelanggan lama di Supabase
+      const { error: deleteCustomersError } = await supabase
+        .from('customers')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+
+      if (deleteCustomersError) throw deleteCustomersError;
+
+      // Hapus transaksi lama juga agar selaras
+      await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+      // 2. Masukkan data asli baru dari Google Sheets (jika ada)
+      if (customersToInsert.length > 0) {
+        const { error: insertError } = await supabase
+          .from('customers')
+          .insert(customersToInsert);
+
+        if (insertError) throw insertError;
+      }
+
+      // 3. Muat ulang data terbaru agar UI langsung ter-update secara instan
+      await fetchData();
+
+      toast.success('Sukses Generate!', {
+        id: 'sheet-gen',
+        description: `Berhasil mengenerate dan menyelaraskan ${customersToInsert.length} data tagihan baru untuk bulan ${monthName}.`
+      });
+      return true;
+
+    } catch (error) {
+      console.error(error);
+      toast.error('Gagal Generate: ' + error.message, { id: 'sheet-gen' });
+      return false;
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const getFinancialSummary = () => {
     const totalTagihan = customers.reduce((sum, c) => sum + c.price, 0);
     const terkumpul = customers.filter(c => c.status === 'Lunas').reduce((sum, c) => sum + c.price, 0);
@@ -344,6 +414,7 @@ export function useBilling() {
     manualSync,
     getFinancialSummary,
     updateCustomer,
-    deleteCustomer
+    deleteCustomer,
+    generateMonthlyTagihan
   };
 }

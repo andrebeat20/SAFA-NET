@@ -50,11 +50,26 @@ export default function Tagihan({ customers, onPayment, currentMonth, onGenerate
   return (
     <div className="pb-24 pt-6 px-4">
       <div className="px-5 py-6">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="bg-rose-100 dark:bg-rose-500/20 p-3 rounded-2xl text-rose-500">
-            <AlertCircle className="w-7 h-7" />
+        <div className="flex items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-4">
+            <div className="bg-rose-100 dark:bg-rose-500/20 p-3 rounded-2xl text-rose-500">
+              <AlertCircle className="w-7 h-7" />
+            </div>
+            <h2 className="text-3xl font-black text-[var(--text-primary)] transition-colors">Daftar Tunggakan</h2>
           </div>
-          <h2 className="text-3xl font-black text-[var(--text-primary)] transition-colors">Daftar Tunggakan</h2>
+          
+          {onGenerate && (
+            <button
+              onClick={() => {
+                const confirmGen = window.confirm(`Apakah Anda yakin ingin mengenerate ulang / menyelaraskan tagihan periode ${currentMonth}?`);
+                if (confirmGen) onGenerate(currentMonth);
+              }}
+              disabled={isSyncing}
+              className="px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95"
+            >
+              {isSyncing ? 'Loading...' : 'Generate'}
+            </button>
+          )}
         </div>
 
         {unpaidCustomers.length > 0 ? (
@@ -108,6 +123,19 @@ export default function Tagihan({ customers, onPayment, currentMonth, onGenerate
             <p className="text-[15px] font-bold text-slate-500 dark:text-slate-400 max-w-[240px] mt-3">
               Tidak ada tunggakan untuk bulan ini. Kerja bagus!
             </p>
+            
+            {onGenerate && (
+              <button
+                onClick={() => {
+                  const confirmGen = window.confirm(`Apakah Anda yakin ingin mengenerate ulang / menyelaraskan tagihan periode ${currentMonth}?`);
+                  if (confirmGen) onGenerate(currentMonth);
+                }}
+                disabled={isSyncing}
+                className="mt-6 px-6 py-3.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 text-white rounded-2xl font-black uppercase tracking-wider text-[10px] transition-all active:scale-95"
+              >
+                {isSyncing ? 'Loading...' : 'Generate Ulang'}
+              </button>
+            )}
           </div>
         )}
       </div>

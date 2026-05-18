@@ -25,7 +25,7 @@ export default function Tagihan({ customers, onPayment, currentMonth, onGenerate
               Data tagihan untuk periode <span className="text-rose-500 font-extrabold">{currentMonth}</span> belum dibuat di Google Spreadsheet.
             </p>
             
-            {isAdmin && onGenerate && (
+            {onGenerate && (
               <button
                 onClick={() => onGenerate(currentMonth)}
                 disabled={isSyncing}

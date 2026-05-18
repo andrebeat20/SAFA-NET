@@ -10,17 +10,18 @@ export default function TopBar({ customMonth, isAdmin, onMonthChange, isDarkMode
   
   const currentMonth = customMonth;
 
-  // Generate last 6 months + next month
+  // Daftar periode bulan MEI - DESEMBER 2026
   const months = useMemo(() => {
-    const list = [];
-    const date = new Date();
-    date.setMonth(date.getMonth() + 1); // Start from next month
-    
-    for (let i = 0; i < 8; i++) {
-      list.push(new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(date).toUpperCase());
-      date.setMonth(date.getMonth() - 1);
-    }
-    return list;
+    return [
+      'MEI 2026',
+      'JUNI 2026',
+      'JULI 2026',
+      'AGUSTUS 2026',
+      'SEPTEMBER 2026',
+      'OKTOBER 2026',
+      'NOVEMBER 2026',
+      'DESEMBER 2026'
+    ];
   }, []);
 
   const handleLogout = async () => {

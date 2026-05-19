@@ -122,12 +122,70 @@ async function sync() {
 
     // 2. Masukkan data asli baru ke tabel customers
     console.log('📤 Memasukkan data pelanggan asli ke Supabase...');
+    const dbCustomers = customersToInsert.map(({ keterangan, ...c }) => c);
+    
     const { error: insertError } = await supabase
       .from('customers')
-      .insert(customersToInsert);
+      .insert(dbCustomers);
       
     if (insertError) {
       throw new Error('Gagal memasukkan data pelanggan asli: ' + insertError.message);
+    }
+
+    // 3. Rekonstruksi histori transaksi di Supabase berdasarkan data sheet
+    console.log('🔄 Membangun ulang histori transaksi di Supabase...');
+    const { data: newCustData, error: fetchNewError } = await supabase
+      .from('customers')
+      .select('id, name, no_urut_excel, price');
+
+    if (!fetchNewError && newCustData) {
+      const transactionsToInsert = [];
+      
+      for (let i = headerIndex + 1; i < parsedLines.length; i++) {
+        const columns = parsedLines[i];
+        if (!columns[1] || columns[1].toLowerCase().includes('total')) continue;
+        
+        const noUrut = parseInt(columns[0]) || (i - headerIndex);
+        const keterangan = (columns[6] || '').toUpperCase();
+        const status = keterangan.includes('BELUM BAYAR') ? 'Belum Bayar' : 'Lunas';
+        
+        if (status === 'Lunas') {
+          const dbCust = newCustData.find(dc => dc.no_urut_excel === noUrut);
+          if (dbCust) {
+            let method = 'Transfer'; // Default fallback
+            if (keterangan.includes('KELILING')) {
+              method = 'Keliling';
+            } else if (keterangan.includes('KANTOR') || keterangan.includes('TUNAI')) {
+              method = 'Tunai Kantor';
+            } else if (keterangan.includes('TRANSFER')) {
+              method = 'Transfer';
+            } else {
+              method = 'Keliling';
+            }
+
+            transactionsToInsert.push({
+              customer_id: dbCust.id,
+              customer_name: dbCust.name,
+              amount: dbCust.price,
+              method: method,
+              bulan_tagihan: 'MEI', // Fallback default month
+              date: new Date().toISOString()
+            });
+          }
+        }
+      }
+
+      if (transactionsToInsert.length > 0) {
+        const { error: txInsertError } = await supabase
+          .from('transactions')
+          .insert(transactionsToInsert);
+          
+        if (txInsertError) {
+          console.error('⚠️ Gagal memasukkan histori transaksi:', txInsertError.message);
+        } else {
+          console.log(`✅ Berhasil menyelaraskan ${transactionsToInsert.length} transaksi pembayaran.`);
+        }
+      }
     }
     
     console.log('✅ SINKRONISASI SUKSES! Database Supabase Anda sekarang 100% menggunakan data riil Google Sheets!');

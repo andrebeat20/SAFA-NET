@@ -155,7 +155,8 @@ function doPost(e) {
           package: paket,
           price: harga,
           phone: noHp,
-          status: status
+          status: status,
+          keterangan: keterangan
         });
       }
       
@@ -264,7 +265,8 @@ function doPost(e) {
           package: paket,
           price: harga,
           phone: noHp,
-          status: "Belum Bayar" // Semua baru digenerate jadi Belum Bayar
+          status: "Belum Bayar", // Semua baru digenerate jadi Belum Bayar
+          keterangan: "BELUM BAYAR"
         });
       }
       

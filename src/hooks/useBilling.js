@@ -176,11 +176,69 @@ export function useBilling() {
 
       // 2. Masukkan data asli baru dari Google Sheets (jika ada)
       if (customersToInsert.length > 0) {
+        // Strip 'keterangan' property to prevent potential database schema errors
+        const dbCustomers = customersToInsert.map(({ keterangan, ...c }) => ({
+          no_urut_excel: c.no_urut_excel,
+          name: c.name,
+          address: c.address,
+          package: c.package,
+          price: c.price,
+          phone: c.phone,
+          status: c.status
+        }));
+
         const { error: insertError } = await supabase
           .from('customers')
-          .insert(customersToInsert);
+          .insert(dbCustomers);
 
         if (insertError) throw insertError;
+
+        // 3. Reconstruct transaction history in Supabase based on Google Sheet data
+        const { data: newCustData, error: fetchNewError } = await supabase
+          .from('customers')
+          .select('id, name, no_urut_excel, price');
+
+        if (!fetchNewError && newCustData) {
+          const transactionsToInsert = [];
+          
+          customersToInsert.forEach(sheetCust => {
+            if (sheetCust.status === 'Lunas') {
+              const dbCust = newCustData.find(dc => dc.no_urut_excel === sheetCust.no_urut_excel);
+              if (dbCust) {
+                let method = 'Transfer'; // Default fallback
+                const ket = (sheetCust.keterangan || '').toUpperCase();
+                if (ket.includes('KELILING')) {
+                  method = 'Keliling';
+                } else if (ket.includes('KANTOR') || ket.includes('TUNAI')) {
+                  method = 'Tunai Kantor';
+                } else if (ket.includes('TRANSFER')) {
+                  method = 'Transfer';
+                } else {
+                  method = 'Keliling'; // fallback
+                }
+
+                transactionsToInsert.push({
+                  customer_id: dbCust.id,
+                  customer_name: dbCust.name,
+                  amount: dbCust.price,
+                  method: method,
+                  bulan_tagihan: targetMonth,
+                  date: new Date().toISOString()
+                });
+              }
+            }
+          });
+
+          if (transactionsToInsert.length > 0) {
+            const { error: txInsertError } = await supabase
+              .from('transactions')
+              .insert(transactionsToInsert);
+            
+            if (txInsertError) {
+              console.error('Failed to insert auto-transactions:', txInsertError);
+            }
+          }
+        }
       }
 
       // 3. Muat ulang data terbaru agar UI langsung ter-update secara instan
@@ -251,9 +309,19 @@ export function useBilling() {
 
       // 2. Masukkan data asli baru dari Google Sheets (jika ada)
       if (customersToInsert.length > 0) {
+        const dbCustomers = customersToInsert.map(({ keterangan, ...c }) => ({
+          no_urut_excel: c.no_urut_excel,
+          name: c.name,
+          address: c.address,
+          package: c.package,
+          price: c.price,
+          phone: c.phone,
+          status: c.status
+        }));
+
         const { error: insertError } = await supabase
           .from('customers')
-          .insert(customersToInsert);
+          .insert(dbCustomers);
 
         if (insertError) throw insertError;
       }

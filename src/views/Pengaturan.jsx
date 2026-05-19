@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { 
+import { useAuthContext } from '../context/AuthContext'; // Tambahkan ini
+import {
   Building, Users, Shield, Plus, Edit2, Trash2, CheckCircle2, 
   XCircle, Save, Key, RefreshCw, Upload, Eye, EyeOff, X, Loader2 
 } from 'lucide-react';
@@ -62,10 +63,11 @@ const convertToArrays = (boolPermissions) => {
 };
 
 export default function Pengaturan() {
+  const { refreshBranding } = useAuthContext(); // Gunakan fungsi refresh dari context
   const [users, setUsers] = useState([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null); // null means adding a new user, else editing
+  const [selectedUser, setSelectedUser] = useState(null);
   const [isSavingUser, setIsSavingUser] = useState(false);
 
   // Role Permissions states
@@ -121,19 +123,16 @@ export default function Pengaturan() {
     }
   };
 
-  // Open User Modal for Creation
   const handleAddUserClick = () => {
     setSelectedUser(null);
     setIsUserModalOpen(true);
   };
 
-  // Open User Modal for Editing
   const handleEditUserClick = (user) => {
     setSelectedUser(user);
     setIsUserModalOpen(true);
   };
 
-  // Save User (Create or Update)
   const handleSaveUser = async (userData) => {
     if (!userData.name || !userData.username || !userData.password) {
       toast.error('Nama, Username, dan Password wajib diisi!');
@@ -143,7 +142,6 @@ export default function Pengaturan() {
     setIsSavingUser(true);
     try {
       if (selectedUser) {
-        // Update user
         const { error } = await supabase
           .from('app_users')
           .update({
@@ -158,7 +156,6 @@ export default function Pengaturan() {
         if (error) throw error;
         toast.success(`Berhasil memperbarui pengguna ${userData.name}!`);
       } else {
-        // Create user
         const { error } = await supabase
           .from('app_users')
           .insert({
@@ -183,7 +180,6 @@ export default function Pengaturan() {
     }
   };
 
-  // Delete User
   const handleDeleteUser = async (id, name) => {
     if (confirm(`Apakah Anda yakin ingin menghapus akun ${name}?`)) {
       try {
@@ -202,7 +198,6 @@ export default function Pengaturan() {
     }
   };
 
-  // Save branding settings
   const handleSaveBranding = async () => {
     if (!appNameInput.trim()) {
       toast.error('Nama aplikasi tidak boleh kosong!');
@@ -211,7 +206,6 @@ export default function Pengaturan() {
 
     setIsSavingBranding(true);
     try {
-      // Check if row exists
       const { data: existing } = await supabase
         .from('app_settings')
         .select('id')
@@ -219,7 +213,6 @@ export default function Pengaturan() {
 
       let error;
       if (existing) {
-        // Update existing row
         const { error: updateErr } = await supabase
           .from('app_settings')
           .update({
@@ -229,7 +222,6 @@ export default function Pengaturan() {
           .eq('id', existing.id);
         error = updateErr;
       } else {
-        // Insert new row
         const { error: insertErr } = await supabase
           .from('app_settings')
           .insert({
@@ -241,13 +233,11 @@ export default function Pengaturan() {
       }
 
       if (error) throw error;
-      toast.success('Pengaturan identitas aplikasi berhasil disimpan!');
-      
-      // Reload branding settings globally (refreshes logo in header)
-      setTimeout(() => {
-        window.location.reload();
-      }, 800);
 
+      // Update global context so logo changes instantly in header/login
+      await refreshBranding();
+
+      toast.success('Pengaturan identitas aplikasi berhasil disimpan!');
     } catch (err) {
       console.error(err);
       toast.error('Gagal menyimpan branding: ' + err.message);
@@ -256,7 +246,6 @@ export default function Pengaturan() {
     }
   };
 
-  // Handle Logo Upload (converts image file to Base64 data URL)
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -269,7 +258,7 @@ export default function Pengaturan() {
     const reader = new FileReader();
     reader.onload = (event) => {
       setAppLogoInput(event.target.result);
-      toast.success('Logo berhasil diunggah! Silakan simpan identitas aplikasi.');
+      toast.success('Pratinjau logo siap. Klik SIMPAN untuk menerapkan.');
     };
     reader.onerror = () => {
       toast.error('Gagal membaca gambar logo.');
@@ -277,10 +266,9 @@ export default function Pengaturan() {
     reader.readAsDataURL(file);
   };
 
-  // Toggle dynamic permission checkbox
   const handlePermissionChange = (role, feature) => {
     if (role === 'admin') {
-      toast.error('Hak akses Administrator bersifat mutlak (Full Access) dan tidak dapat dimodifikasi.');
+      toast.error('Hak akses Administrator tidak dapat dimodifikasi.');
       return;
     }
     setPermissions(prev => ({
@@ -292,49 +280,18 @@ export default function Pengaturan() {
     }));
   };
 
-  // Save current role permissions matrix
   const handleSavePermissions = async () => {
     setIsSavingPermissions(true);
     try {
-      const { data: existing, error: fetchErr } = await supabase
-        .from('app_settings')
-        .select('id')
-        .eq('id', 1)
-        .maybeSingle();
-
-      if (fetchErr) throw fetchErr;
-
       const dbPermissions = convertToArrays(permissions);
-      let error;
-
-      if (existing) {
-        // Update existing row
-        const { error: updateErr } = await supabase
-          .from('app_settings')
-          .update({
-            role_permissions: dbPermissions
-          })
-          .eq('id', 1);
-        error = updateErr;
-      } else {
-        // Insert new settings row
-        const { error: insertErr } = await supabase
-          .from('app_settings')
-          .insert({
-            id: 1,
-            role_permissions: dbPermissions
-          });
-        error = insertErr;
-      }
+      const { error } = await supabase
+        .from('app_settings')
+        .update({ role_permissions: dbPermissions })
+        .eq('id', 1);
 
       if (error) throw error;
+      await refreshBranding();
       toast.success('Matriks Hak Akses berhasil diperbarui!');
-      
-      // Reload page after a brief delay to apply changes system-wide
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-      
     } catch (err) {
       console.error(err);
       toast.error('Gagal menyimpan matriks hak akses: ' + err.message);
@@ -366,7 +323,6 @@ export default function Pengaturan() {
           </div>
 
           <div className="space-y-5">
-            {/* App Name Input */}
             <div className="space-y-1.5">
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Nama Aplikasi / Usaha</label>
               <input
@@ -378,11 +334,9 @@ export default function Pengaturan() {
               />
             </div>
 
-            {/* Logo Upload Section */}
             <div className="space-y-2">
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Logo Aplikasi</label>
               <div className="flex items-center gap-4">
-                {/* Logo Preview */}
                 <div className="w-16 h-16 bg-slate-100 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 rounded-2xl flex items-center justify-center overflow-hidden p-2 flex-shrink-0">
                   {appLogoInput ? (
                     <img src={appLogoInput} alt="Preview Logo" className="w-full h-full object-contain" />
@@ -413,12 +367,11 @@ export default function Pengaturan() {
                       </button>
                     )}
                   </div>
-                  <p className="text-[9px] text-slate-450 dark:text-slate-600 font-bold uppercase">Format gambar (PNG, JPG, SVG). Max 1MB untuk performa.</p>
+                  <p className="text-[9px] text-slate-450 dark:text-slate-600 font-bold uppercase">Format (PNG, JPG, SVG). Max 1MB.</p>
                 </div>
               </div>
             </div>
 
-            {/* Save Branding Button */}
             <div className="pt-2">
               <button
                 onClick={handleSaveBranding}
@@ -432,7 +385,7 @@ export default function Pengaturan() {
           </div>
         </div>
 
-        {/* Section 2: User Management (CRUD) */}
+        {/* Section 2: User Management */}
         <div className="bg-white/70 dark:bg-slate-900/60 p-6 shadow-xl rounded-3xl border border-slate-200/30 dark:border-slate-800/30 backdrop-blur-xl transition-all">
           <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-4 mb-5">
             <div className="flex items-center gap-3">
@@ -484,15 +437,13 @@ export default function Pengaturan() {
                     <button
                       onClick={() => handleEditUserClick(user)}
                       className="p-2 bg-slate-150 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-500 rounded-lg transition-colors cursor-pointer"
-                      title="Edit Akun"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     {user.role !== 'admin' && (
                       <button
                         onClick={() => handleDeleteUser(user.id, user.name)}
-                        className="p-2 bg-rose-50 dark:bg-rose-500/10 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-500/20 rounded-lg transition-colors cursor-pointer"
-                        title="Hapus Akun"
+                        className="p-2 bg-rose-50 dark:bg-rose-500/10 text-rose-500 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -504,7 +455,7 @@ export default function Pengaturan() {
           )}
         </div>
 
-        {/* Section 3: Hak Akses Role Permissions Grid */}
+        {/* Section 3: Hak Akses */}
         <div className="bg-white/70 dark:bg-slate-900/60 p-6 shadow-xl rounded-3xl border border-slate-200/30 dark:border-slate-800/30 backdrop-blur-xl transition-all">
           <div className="flex items-center gap-3 border-b border-[var(--border-color)] pb-4 mb-5">
             <div className="bg-brand/10 dark:bg-brand/20 p-2 rounded-xl text-brand">
@@ -512,7 +463,7 @@ export default function Pengaturan() {
             </div>
             <div>
               <h3 className="font-extrabold text-[15px] text-[var(--text-primary)] leading-none">Matriks Hak Akses (Role Permissions)</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Berikan batasan fitur untuk masing-masing peran</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Batasi fitur tiap peran</p>
             </div>
           </div>
 
@@ -533,7 +484,7 @@ export default function Pengaturan() {
                   { key: 'home', label: 'Dashboard Utama (Home)' },
                   { key: 'pelanggan', label: 'Manajemen Data Pelanggan' },
                   { key: 'tagihan', label: 'Pencatatan & Konfirmasi Tagihan' },
-                  { key: 'laporan', label: 'Grafik Laporan Bulanan (Pie Chart)' },
+                  { key: 'laporan', label: 'Grafik Laporan Bulanan' },
                   { key: 'pengaturan', label: 'Konfigurasi & Pengaturan Role' }
                 ].map(feature => (
                   <tr key={feature.key} className="hover:bg-slate-50/30 dark:hover:bg-slate-950/10 transition-colors">
@@ -548,8 +499,8 @@ export default function Pengaturan() {
                             disabled={isMutlalk}
                             className={`inline-flex items-center justify-center p-2 rounded-xl border transition-all cursor-pointer ${
                               hasAccess 
-                                ? 'bg-emerald-50 border-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400' 
-                                : 'bg-rose-50 border-rose-100 text-rose-500 dark:bg-rose-500/10 dark:border-rose-500/20 dark:text-rose-400'
+                                ? 'bg-emerald-50 border-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400'
+                                : 'bg-rose-50 border-rose-100 text-rose-500 dark:bg-rose-500/10 dark:text-rose-400'
                             } ${isMutlalk ? 'opacity-80 cursor-not-allowed' : 'active:scale-90'}`}
                           >
                             {hasAccess ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
@@ -576,8 +527,7 @@ export default function Pengaturan() {
         </div>
       </div>
 
-      {/* Dynamic Modal: Add/Edit User (Optimized Component) */}
-      <UserModal 
+      <UserModal
         isOpen={isUserModalOpen} 
         onClose={() => setIsUserModalOpen(false)} 
         selectedUser={selectedUser} 
@@ -589,7 +539,6 @@ export default function Pengaturan() {
   );
 }
 
-// Sub-komponen Modal Teroptimasi agar ketikan input lancar tanpa render ulang induk
 function UserModal({ isOpen, onClose, selectedUser, onSave, isSaving }) {
   const [formName, setFormName] = useState('');
   const [formUsername, setFormUsername] = useState('');
@@ -628,25 +577,12 @@ function UserModal({ isOpen, onClose, selectedUser, onSave, isSaving }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-5">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-slate-950/70"
-        onClick={onClose}
-      />
-      
-      {/* Modal Container */}
-      <div
-        className="w-full max-w-sm bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-[32px] overflow-hidden shadow-2xl p-6 relative z-50 transition-colors"
-      >
-        {/* Close Button */}
-        <button 
-          onClick={onClose}
-          className="absolute top-5 right-5 p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-500 rounded-full transition-all cursor-pointer"
-        >
+      <div className="absolute inset-0 bg-slate-950/70" onClick={onClose} />
+      <div className="w-full max-w-sm bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-[32px] overflow-hidden shadow-2xl p-6 relative z-50 transition-colors">
+        <button onClick={onClose} className="absolute top-5 right-5 p-2 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full transition-all cursor-pointer">
           <X className="w-4 h-4" />
         </button>
 
-        {/* Modal Title */}
         <div className="mb-6 flex items-center gap-3">
           <div className="bg-brand/10 p-2 rounded-xl text-brand">
             <Users className="w-5 h-5" />
@@ -655,95 +591,35 @@ function UserModal({ isOpen, onClose, selectedUser, onSave, isSaving }) {
             <h4 className="font-extrabold text-[15px] text-[var(--text-primary)] leading-none">
               {selectedUser ? 'Edit Pengguna' : 'Tambah Pengguna'}
             </h4>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">
-              {selectedUser ? 'Perbarui informasi akun' : 'Buat kredensial akun baru'}
-            </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Name Input */}
           <div className="space-y-1.5">
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Nama Lengkap</label>
-            <input
-              type="text"
-              required
-              value={formName}
-              onChange={(e) => setFormName(e.target.value)}
-              disabled={isSaving}
-              className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand text-xs font-semibold outline-none transition-all"
-              placeholder="Contoh: Andre Beat"
-            />
+            <input type="text" required value={formName} onChange={(e) => setFormName(e.target.value)} disabled={isSaving} className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:border-brand text-xs font-semibold outline-none" />
           </div>
-
-          {/* Username Input */}
           <div className="space-y-1.5">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Username / ID Login</label>
-            <input
-              type="text"
-              required
-              value={formUsername}
-              onChange={(e) => setFormUsername(e.target.value)}
-              disabled={isSaving}
-              className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand text-xs font-semibold outline-none transition-all"
-              placeholder="Contoh: andre_lapangan"
-            />
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Username</label>
+            <input type="text" required value={formUsername} onChange={(e) => setFormUsername(e.target.value)} disabled={isSaving} className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:border-brand text-xs font-semibold outline-none" />
           </div>
-
-          {/* Password Input */}
           <div className="space-y-1.5">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Kata Sandi (Password)</label>
-            <input
-              type="text"
-              required
-              value={formPassword}
-              onChange={(e) => setFormPassword(e.target.value)}
-              disabled={isSaving}
-              className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand text-xs font-semibold outline-none transition-all"
-              placeholder="Ketik password pengguna..."
-            />
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Password</label>
+            <input type="text" required value={formPassword} onChange={(e) => setFormPassword(e.target.value)} disabled={isSaving} className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:border-brand text-xs font-semibold outline-none" />
           </div>
-
-          {/* Phone Input */}
           <div className="space-y-1.5">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">No HP / WhatsApp (Opsional)</label>
-            <input
-              type="text"
-              value={formPhone}
-              onChange={(e) => setFormPhone(e.target.value)}
-              disabled={isSaving}
-              className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand text-xs font-semibold outline-none transition-all"
-              placeholder="Contoh: 081234567890"
-            />
-          </div>
-
-          {/* Role Select Input */}
-          <div className="space-y-1.5">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Hak Akses (Role)</label>
-            <select
-              value={formRole}
-              onChange={(e) => setFormRole(e.target.value)}
-              disabled={isSaving}
-              className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand text-xs font-semibold outline-none transition-all cursor-pointer"
-            >
-              {selectedUser?.role === 'admin' && (
-                <option value="admin">Administrator (Full Access)</option>
-              )}
-              <option value="teknisi">Teknisi Lapangan</option>
-              <option value="owner">Owner / Pemilik</option>
-              <option value="petugas">Petugas Lapangan</option>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Hak Akses</label>
+            <select value={formRole} onChange={(e) => setFormRole(e.target.value)} disabled={isSaving} className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:border-brand text-xs font-semibold outline-none">
+              {selectedUser?.role === 'admin' && <option value="admin">Administrator</option>}
+              <option value="teknisi">Teknisi</option>
+              <option value="owner">Owner</option>
+              <option value="petugas">Petugas</option>
             </select>
           </div>
-
-          {/* Submit Button */}
           <div className="pt-3">
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="w-full flex justify-center items-center py-3.5 px-4 rounded-2xl shadow-lg shadow-brand/10 text-xs font-black tracking-wider text-white bg-gradient-to-r from-brand to-brand-dark hover:brightness-110 transition-all disabled:opacity-70 cursor-pointer"
-            >
+            <button type="submit" disabled={isSaving} className="w-full flex justify-center items-center py-3.5 px-4 rounded-2xl text-white bg-gradient-to-r from-brand to-brand-dark font-black text-xs cursor-pointer">
               {isSaving ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-              {selectedUser ? 'SIMPAN PERUBAHAN' : 'BUAT AKUN PENGGUNA'}
+              SIMPAN
             </button>
           </div>
         </form>

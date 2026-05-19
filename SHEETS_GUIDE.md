@@ -231,15 +231,40 @@ function doPost(e) {
         newSheet.getRange(r, 11).setValue(price); // Kolom K (BELUM BAYAR = Nominal Harga)
       }
       
-      // 4. Hapus riwayat setoran harian SETORAN TAHAP (Kolom M ke kanan, baris 4 ke bawah)
+      // 4. Reset tabel SETORAN TAHAP 1 - 30 (Kolom M ke U, baris 4 sampai 33)
       if (lastRow >= 4) {
-        var rangeM_U = newSheet.getRange(4, 13, lastRow - 3, 9);
-        rangeM_U.clearContent();
-        rangeM_U.clearFormat();
-        try {
-          rangeM_U.breakApart(); // Pisahkan jika ada sel yang ter-merge
-        } catch(e) {}
+        // Bersihkan area dari baris 4 ke bawah jika ada data lebih panjang
+        var clearRange = newSheet.getRange(4, 13, Math.max(lastRow - 3, 31), 9);
+        clearRange.clearContent();
+        clearRange.clearFormat();
+        try { clearRange.breakApart(); } catch(e) {}
       }
+      
+      // Gambar ulang 30 baris kosong untuk Tahap 1 sampai 30
+      for (var i = 1; i <= 30; i++) {
+        var row = i + 3; // baris 4 sampai 33
+        newSheet.getRange(row, 14).setValue(i); // Tahap (Kolom N)
+        newSheet.getRange(row, 15, 1, 2).merge(); // Merge Setoran (O & P)
+        newSheet.getRange(row, 20, 1, 2).merge(); // Merge Keterangan (T & U)
+      }
+      
+      // Gambar baris Total di baris 34
+      var totalRow = 34;
+      newSheet.getRange(totalRow, 15, 1, 2).merge();
+      newSheet.getRange(totalRow, 20, 1, 2).merge();
+      newSheet.getRange(totalRow, 14).setValue("TOTAL");
+      
+      newSheet.getRange(totalRow, 15).setFormula("=SUM(O4:O33)").setNumberFormat("[$Rp-421]#,##0");
+      newSheet.getRange(totalRow, 17).setFormula("=SUM(Q4:Q33)").setNumberFormat("[$Rp-421]#,##0");
+      newSheet.getRange(totalRow, 18).setFormula("=SUM(R4:R33)").setNumberFormat("[$Rp-421]#,##0");
+      newSheet.getRange(totalRow, 19).setFormula("=SUM(S4:S33)").setNumberFormat("[$Rp-421]#,##0");
+      
+      // Format borders & alignment
+      var tableRange = newSheet.getRange(4, 13, 31, 9); // Termasuk baris total
+      tableRange.setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
+      tableRange.setHorizontalAlignment("center");
+      newSheet.getRange(4, 20, 31, 2).setHorizontalAlignment("left"); // Keterangan rata kiri
+      newSheet.getRange(totalRow, 13, 1, 9).setFontWeight("bold");
       
       // 5. Ambil data pelanggan baru hasil generate untuk dikirim balik ke Supabase
       var newCustomers = [];
@@ -327,12 +352,12 @@ function doPost(e) {
     // 3. Catat di tabel SETORAN TAHAP (Kolom M:U)
     var todayStr = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), "dd-MMM-yy");
     var targetDailyRow = -1;
-    var lastDailyRow = 3; // header di baris 3
+    var firstEmptyRow = -1;
     
-    for (var r = 4; r <= lastRow; r++) {
+    // Cari baris dari tahap 1 sampai 30 (Baris 4 sampai 33)
+    for (var r = 4; r <= 33; r++) {
       var val = sheet.getRange(r, 13).getValue(); // Kolom M (Tanggal)
       if (val !== "") {
-        lastDailyRow = r;
         var valStr = "";
         if (val instanceof Date) {
           valStr = Utilities.formatDate(val, ss.getSpreadsheetTimeZone(), "dd-MMM-yy");
@@ -341,40 +366,33 @@ function doPost(e) {
         }
         if (valStr === todayStr) {
           targetDailyRow = r;
+          break; // Sudah ada transaksi hari ini
         }
+      } else if (firstEmptyRow === -1) {
+        firstEmptyRow = r; // Catat baris kosong pertama yang ditemukan
       }
     }
     
     if (targetDailyRow === -1) {
-      // Tambah baris baru untuk hari ini
-      var newRow = lastDailyRow + 1;
+      // Jika belum ada transaksi hari ini, gunakan baris kosong pertama
+      targetDailyRow = firstEmptyRow !== -1 ? firstEmptyRow : 34; 
       
-      sheet.getRange(newRow, 13).setValue(todayStr); // Tanggal (M)
+      sheet.getRange(targetDailyRow, 13).setValue(todayStr); // Tanggal (M)
       
-      var prevTahap = 0;
-      if (lastDailyRow > 3) {
-        prevTahap = parseInt(sheet.getRange(lastDailyRow, 14).getValue()) || 0;
-      }
-      sheet.getRange(newRow, 14).setValue(prevTahap + 1); // Tahap (N)
+      // Kolom N (Tahap) sudah di-generate sebelumnya (1-30)
       
-      sheet.getRange(newRow, 15).setFormula("=SUM(Q" + newRow + ":S" + newRow + ")"); // Setoran (O)
+      sheet.getRange(targetDailyRow, 15).setFormula("=SUM(Q" + targetDailyRow + ":S" + targetDailyRow + ")"); // Setoran (O)
       
-      sheet.getRange(newRow, 17).setValue(method === "Keliling" ? price : 0); // Keliling (Q)
-      sheet.getRange(newRow, 18).setValue((method === "Kantor" || method === "Tunai Kantor") ? price : 0); // Kantor (R)
-      sheet.getRange(newRow, 19).setValue(method === "Transfer" ? price : 0); // Transfer (S)
-      sheet.getRange(newRow, 20).setValue((method === "Kantor" || method === "Tunai Kantor") ? customerName : ""); // Keterangan (T)
+      sheet.getRange(targetDailyRow, 17).setValue(method === "Keliling" ? price : 0); // Keliling (Q)
+      sheet.getRange(targetDailyRow, 18).setValue((method === "Kantor" || method === "Tunai Kantor") ? price : 0); // Kantor (R)
+      sheet.getRange(targetDailyRow, 19).setValue(method === "Transfer" ? price : 0); // Transfer (S)
+      sheet.getRange(targetDailyRow, 20).setValue((method === "Kantor" || method === "Tunai Kantor") ? customerName : ""); // Keterangan (T)
       
-      // Formatting
-      sheet.getRange(newRow, 15, 1, 2).merge();
-      sheet.getRange(newRow, 20, 1, 2).merge();
-      sheet.getRange(newRow, 15).setNumberFormat("[$Rp-421]#,##0");
-      sheet.getRange(newRow, 17).setNumberFormat("[$Rp-421]#,##0");
-      sheet.getRange(newRow, 18).setNumberFormat("[$Rp-421]#,##0");
-      sheet.getRange(newRow, 19).setNumberFormat("[$Rp-421]#,##0");
-      sheet.getRange(newRow, 13, 1, 7).setHorizontalAlignment("center");
-      sheet.getRange(newRow, 20).setHorizontalAlignment("left");
-      sheet.getRange(newRow, 13, 1, 9)
-           .setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
+      // Formatting mata uang
+      sheet.getRange(targetDailyRow, 15).setNumberFormat("[$Rp-421]#,##0");
+      sheet.getRange(targetDailyRow, 17).setNumberFormat("[$Rp-421]#,##0");
+      sheet.getRange(targetDailyRow, 18).setNumberFormat("[$Rp-421]#,##0");
+      sheet.getRange(targetDailyRow, 19).setNumberFormat("[$Rp-421]#,##0");
     } else {
       // Update baris hari ini yang sudah ada
       if (method === "Keliling") {

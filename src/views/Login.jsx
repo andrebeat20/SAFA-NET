@@ -35,11 +35,11 @@ export default function Login({ isDarkMode, toggleDarkMode }) {
       <div className="relative z-10 w-full max-w-sm mx-auto">
         {/* Brand Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-[500px] h-[500px] max-w-full mb-5 overflow-hidden bg-transparent">
+          <div className="inline-flex items-center justify-center w-28 h-28 mb-4 overflow-hidden bg-transparent">
             {appLogo ? (
               <img src={appLogo} alt="Logo" className="w-full h-full object-contain" />
             ) : (
-              <Wifi className="w-40 h-40 text-brand animate-pulse" style={{ animationDuration: '2s' }} />
+              <Wifi className="w-12 h-12 text-brand animate-pulse" style={{ animationDuration: '2s' }} />
             )}
           </div>
           

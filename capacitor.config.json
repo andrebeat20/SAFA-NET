@@ -1,0 +1,8 @@
+{
+  "appId": "com.safanet.billing",
+  "appName": "SAFA-NET",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}

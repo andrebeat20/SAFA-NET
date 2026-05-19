@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Wifi, LogIn, Lock, User, Loader2, Sun, Moon, Eye, EyeOff } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
 
 export default function Login({ isDarkMode, toggleDarkMode }) {
@@ -36,45 +35,25 @@ export default function Login({ isDarkMode, toggleDarkMode }) {
       <div className="relative z-10 w-full max-w-sm mx-auto">
         {/* Brand Header */}
         <div className="text-center mb-8">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.6, type: 'spring' }}
-            className="inline-flex items-center justify-center w-[500px] h-[500px] max-w-full mb-5 overflow-hidden bg-transparent"
-          >
+          <div className="inline-flex items-center justify-center w-[500px] h-[500px] max-w-full mb-5 overflow-hidden bg-transparent">
             {appLogo ? (
               <img src={appLogo} alt="Logo" className="w-full h-full object-contain" />
             ) : (
               <Wifi className="w-40 h-40 text-brand animate-pulse" style={{ animationDuration: '2s' }} />
             )}
-          </motion.div>
+          </div>
           
-          <motion.h1
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.5 }}
-            className="text-4xl font-extrabold text-[var(--text-primary)] tracking-tight transition-colors uppercase"
-          >
+          <h1 className="text-4xl font-extrabold text-[var(--text-primary)] tracking-tight transition-colors uppercase">
             {appName}
-          </motion.h1>
+          </h1>
           
-          <motion.p
-            initial={{ opacity: 0, y: -5 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            className="mt-2 text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-[0.25em]"
-          >
+          <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-[0.25em]">
             Billing Management System
-          </motion.p>
+          </p>
         </div>
 
         {/* Login Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.6 }}
-          className="bg-white/70 dark:bg-slate-900/60 py-9 px-8 shadow-2xl rounded-[32px] border border-slate-200/30 dark:border-slate-800/30 backdrop-blur-xl transition-all"
-        >
+        <div className="bg-white/70 dark:bg-slate-900/60 py-9 px-8 shadow-2xl rounded-[32px] border border-slate-200/30 dark:border-slate-800/30 backdrop-blur-xl transition-all">
           <form onSubmit={handleLogin} className="space-y-6">
             {/* ID Petugas / Username Field */}
             <div className="space-y-2">
@@ -127,12 +106,10 @@ export default function Login({ isDarkMode, toggleDarkMode }) {
 
             {/* Login Button */}
             <div className="pt-2">
-              <motion.button
-                whileHover={{ scale: 1.01 }}
-                whileTap={{ scale: 0.99 }}
+              <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center items-center py-3.5 px-4 rounded-2xl shadow-lg shadow-brand/10 dark:shadow-none text-[15px] font-bold tracking-wider text-white bg-gradient-to-r from-brand to-brand-dark hover:brightness-110 transition-all disabled:opacity-70 disabled:pointer-events-none cursor-pointer"
+                className="w-full flex justify-center items-center py-3.5 px-4 rounded-2xl shadow-lg shadow-brand/10 dark:shadow-none text-[15px] font-bold tracking-wider text-white bg-gradient-to-r from-brand to-brand-dark hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-70 disabled:pointer-events-none cursor-pointer"
               >
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -142,36 +119,26 @@ export default function Login({ isDarkMode, toggleDarkMode }) {
                     MASUK SISTEM
                   </>
                 )}
-              </motion.button>
+              </button>
             </div>
           </form>
           
           {/* Elegant Dynamic Hints */}
           {isDemoMode ? (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="mt-8 text-center p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20"
-            >
+            <div className="mt-8 text-center p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20">
               <span className="inline-block text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest leading-relaxed">
                 ⚠️ MODE DEMO AKTIF:<br />ketik <span className="text-brand font-extrabold">"admin"</span> / <span className="text-brand font-extrabold">"teknisi"</span> untuk demo.<br />
                 <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 normal-case mt-1 block">Silakan jalankan file `init_db.sql` di Supabase SQL Editor Anda untuk masuk mode riil.</span>
               </span>
-            </motion.div>
+            </div>
           ) : (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="mt-8 text-center"
-            >
+            <div className="mt-8 text-center">
               <span className="inline-block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-relaxed">
                 🔐 SILAKAN MASUK MENGGUNAKAN KREDENSIAL AKUN YANG TELAH DIBUAT OLEH ADMINISTRATOR.
               </span>
-            </motion.div>
+            </div>
           )}
-        </motion.div>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { Search, LogOut, Loader2, Calendar, ChevronDown } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 export default function FieldHeader({ 
   user, 
@@ -41,7 +40,7 @@ export default function FieldHeader({
           <button 
             onClick={onLogout}
             disabled={isLoggingOut}
-            className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all backdrop-blur-md disabled:opacity-50 active:scale-90"
+            className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all backdrop-blur-md disabled:opacity-50 active:scale-90 cursor-pointer"
           >
             {isLoggingOut ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <LogOut className="w-5 h-5 text-white" />}
           </button>
@@ -51,47 +50,40 @@ export default function FieldHeader({
         <div className="relative mb-8">
           <button 
             onClick={() => setShowPicker(!showPicker)}
-            className="flex items-center gap-2 bg-white/10 dark:bg-white/5 px-5 py-2.5 rounded-full text-[11px] font-black text-white border border-white/20 uppercase tracking-[0.15em] transition-all active:scale-95"
+            className="flex items-center gap-2 bg-white/10 dark:bg-white/5 px-5 py-2.5 rounded-full text-[11px] font-black text-white border border-white/20 uppercase tracking-[0.15em] transition-all active:scale-95 cursor-pointer"
           >
             <Calendar className="w-4 h-4" />
             Bulan: {customMonth}
             <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showPicker ? 'rotate-180' : ''}`} />
           </button>
 
-          <AnimatePresence>
-            {showPicker && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowPicker(false)}></div>
-                <motion.div 
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute left-0 mt-3 w-64 bg-[var(--bg-secondary)] rounded-[32px] shadow-2xl border border-[var(--border-color)] overflow-hidden z-50 p-2 transition-colors"
-                >
-                  <div className="px-4 py-3 mb-1 border-b border-[var(--border-color)]">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pilih Periode Tagihan</span>
-                  </div>
-                  <div className="max-h-72 overflow-y-auto scrollbar-hide space-y-1 py-1">
-                    {months.map(m => (
-                      <button
-                        key={m}
-                        onClick={() => {
-                          onMonthChange(m);
-                          setShowPicker(false);
-                        }}
-                        className={`w-full px-4 py-4 text-left text-[13px] font-black transition-all rounded-2xl flex items-center justify-between uppercase tracking-wider ${
-                          customMonth === m ? 'bg-brand text-white shadow-xl shadow-brand/30' : 'text-[var(--text-primary)] hover:bg-[var(--border-color)]'
-                        }`}
-                      >
-                        {m}
-                        {customMonth === m && <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>}
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
+          {showPicker && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowPicker(false)}></div>
+              <div className="absolute left-0 mt-3 w-64 bg-[var(--bg-secondary)] rounded-[32px] shadow-2xl border border-[var(--border-color)] overflow-hidden z-50 p-2 transition-colors">
+                <div className="px-4 py-3 mb-1 border-b border-[var(--border-color)]">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pilih Periode Tagihan</span>
+                </div>
+                <div className="max-h-72 overflow-y-auto scrollbar-hide space-y-1 py-1">
+                  {months.map(m => (
+                    <button
+                      key={m}
+                      onClick={() => {
+                        onMonthChange(m);
+                        setShowPicker(false);
+                      }}
+                      className={`w-full px-4 py-4 text-left text-[13px] font-black transition-all rounded-2xl flex items-center justify-between uppercase tracking-wider cursor-pointer ${
+                        customMonth === m ? 'bg-brand text-white shadow-xl shadow-brand/30' : 'text-[var(--text-primary)] hover:bg-[var(--border-color)]'
+                      }`}
+                    >
+                      {m}
+                      {customMonth === m && <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Large Search Bar */}

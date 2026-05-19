@@ -77,9 +77,10 @@ export default function TopBar({ customMonth, isAdmin, onMonthChange, isDarkMode
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowPicker(false)}></div>
                   <motion.div 
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    transition={{ duration: 0.12, ease: 'easeOut' }}
                     className="absolute right-0 mt-2 w-48 bg-[var(--bg-secondary)] rounded-2xl shadow-2xl border border-[var(--border-color)] overflow-hidden z-50 py-2 transition-colors"
                   >
                     <div className="px-4 py-2 border-b border-[var(--border-color)] mb-1">

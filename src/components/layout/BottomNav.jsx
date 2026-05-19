@@ -1,14 +1,21 @@
 import React from 'react';
-import { Home, Users, FileText, PieChart } from 'lucide-react';
+import { Home, Users, FileText, PieChart, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function BottomNav({ activeTab, setActiveTab }) {
-  const tabs = [
+  const { hasPermission } = useAuth();
+  
+  const allTabs = [
     { id: 'home', label: 'Home', icon: Home },
     { id: 'pelanggan', label: 'Pelanggan', icon: Users },
     { id: 'tagihan', label: 'Tagihan', icon: FileText },
     { id: 'laporan', label: 'Laporan', icon: PieChart },
+    { id: 'pengaturan', label: 'Pengaturan', icon: Settings },
   ];
+
+  // Dynamically filter tabs based on permissions
+  const tabs = allTabs.filter(tab => hasPermission(tab.id));
 
   return (
     <nav className="fixed bottom-6 left-0 right-0 px-6 z-50 pointer-events-none">

@@ -4,16 +4,16 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
 
 export default function Login({ isDarkMode, toggleDarkMode }) {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
+  const { login, appName, appLogo, isDemoMode } = useAuth();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    await login(email, password);
+    await login(username, password);
     setIsLoading(false);
   };
 
@@ -40,18 +40,22 @@ export default function Login({ isDarkMode, toggleDarkMode }) {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.6, type: 'spring' }}
-            className="inline-flex items-center justify-center w-20 h-20 rounded-[24px] bg-gradient-to-tr from-brand via-brand to-brand-light text-white mb-5 shadow-xl shadow-brand/20 dark:shadow-none"
+            className="inline-flex items-center justify-center w-20 h-20 rounded-[24px] bg-gradient-to-tr from-brand via-brand to-brand-light text-white mb-5 shadow-xl shadow-brand/20 dark:shadow-none overflow-hidden p-3"
           >
-            <Wifi className="w-10 h-10 animate-pulse" style={{ animationDuration: '2s' }} />
+            {appLogo ? (
+              <img src={appLogo} alt="Logo" className="w-full h-full object-contain rounded-xl" />
+            ) : (
+              <Wifi className="w-10 h-10 animate-pulse" style={{ animationDuration: '2s' }} />
+            )}
           </motion.div>
           
           <motion.h1
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.5 }}
-            className="text-4xl font-extrabold text-[var(--text-primary)] tracking-tight transition-colors"
+            className="text-4xl font-extrabold text-[var(--text-primary)] tracking-tight transition-colors uppercase"
           >
-            SAFA<span className="text-brand">.</span>NET
+            {appName}
           </motion.h1>
           
           <motion.p
@@ -72,10 +76,10 @@ export default function Login({ isDarkMode, toggleDarkMode }) {
           className="bg-white/70 dark:bg-slate-900/60 py-9 px-8 shadow-2xl rounded-[32px] border border-slate-200/30 dark:border-slate-800/30 backdrop-blur-xl transition-all"
         >
           <form onSubmit={handleLogin} className="space-y-6">
-            {/* ID Petugas Field */}
+            {/* ID Petugas / Username Field */}
             <div className="space-y-2">
               <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest px-1">
-                ID Petugas / Email
+                Username / ID Pengguna
               </label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -84,11 +88,11 @@ export default function Login({ isDarkMode, toggleDarkMode }) {
                 <input
                   type="text"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   disabled={isLoading}
                   className="block w-full pl-11 pr-4 py-3.5 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand focus:bg-white dark:focus:bg-slate-950 transition-all text-[15px] font-medium disabled:opacity-50 outline-none"
-                  placeholder="Ketik email atau ID..."
+                  placeholder="Masukkan username Anda..."
                 />
               </div>
             </div>
@@ -135,24 +139,38 @@ export default function Login({ isDarkMode, toggleDarkMode }) {
                 ) : (
                   <>
                     <LogIn className="w-5 h-5 mr-3" />
-                    MASUK
+                    MASUK SISTEM
                   </>
                 )}
               </motion.button>
             </div>
           </form>
           
-          {/* Elegant Hints */}
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="mt-8 text-center"
-          >
-            <span className="inline-block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-relaxed">
-              💡 petunjuk: ketik <span className="text-brand font-extrabold">"admin"</span>, <span className="text-brand font-extrabold">"teknisi"</span>, atau <span className="text-brand font-extrabold">"owner"</span> untuk demo.
-            </span>
-          </motion.div>
+          {/* Elegant Dynamic Hints */}
+          {isDemoMode ? (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="mt-8 text-center p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20"
+            >
+              <span className="inline-block text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest leading-relaxed">
+                ⚠️ MODE DEMO AKTIF:<br />ketik <span className="text-brand font-extrabold">"admin"</span> / <span className="text-brand font-extrabold">"teknisi"</span> untuk demo.<br />
+                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 normal-case mt-1 block">Silakan jalankan file `init_db.sql` di Supabase SQL Editor Anda untuk masuk mode riil.</span>
+              </span>
+            </motion.div>
+          ) : (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="mt-8 text-center"
+            >
+              <span className="inline-block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-relaxed">
+                🔐 SILAKAN MASUK MENGGUNAKAN KREDENSIAL AKUN YANG TELAH DIBUAT OLEH ADMINISTRATOR.
+              </span>
+            </motion.div>
+          )}
         </motion.div>
       </div>
     </div>

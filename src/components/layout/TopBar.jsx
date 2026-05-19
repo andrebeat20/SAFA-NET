@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function TopBar({ customMonth, isAdmin, onMonthChange, isDarkMode, toggleDarkMode }) {
-  const { logout } = useAuth();
+  const { logout, appName, appLogo } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   
@@ -38,12 +38,16 @@ export default function TopBar({ customMonth, isAdmin, onMonthChange, isDarkMode
     <header className="sticky top-0 z-50 glass border-b-0 shadow-sm transition-all duration-500">
       <div className="flex items-center justify-between px-5 h-20">
         <div className="flex items-center gap-3">
-          <div className="bg-brand text-white p-2.5 rounded-2xl shadow-lg shadow-brand/30">
-            <Wifi className="w-6 h-6" />
+          <div className="w-11 h-11 bg-brand/10 text-brand rounded-2xl border border-slate-200/40 dark:border-slate-800/40 shadow-sm flex items-center justify-center overflow-hidden p-1.5 flex-shrink-0">
+            {appLogo ? (
+              <img src={appLogo} alt="Logo" className="w-full h-full object-contain" />
+            ) : (
+              <Wifi className="w-5 h-5 text-brand" />
+            )}
           </div>
           <div>
-            <h1 className="font-black text-xl tracking-tight text-[var(--text-primary)] leading-none transition-colors">SAFA.NET</h1>
-            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Billing System</p>
+            <h1 className="font-black text-lg tracking-tight text-[var(--text-primary)] leading-none transition-colors uppercase">{appName}</h1>
+            <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Billing System</p>
           </div>
         </div>
         

@@ -6,6 +6,7 @@ import Dashboard from './views/Dashboard';
 import Customers from './views/Customers';
 import Tagihan from './views/Tagihan';
 import Laporan from './views/Laporan';
+import Pengaturan from './views/Pengaturan';
 import PaymentBottomSheet from './components/shared/PaymentBottomSheet';
 import { useBilling } from './hooks/useBilling';
 import { useAuth } from './hooks/useAuth';
@@ -22,7 +23,7 @@ function App() {
     return localStorage.getItem('safanet_theme') === 'dark';
   });
   
-  const { isAuthenticated, isPetugas, isAdmin, isTeknisi, isOwner, loading } = useAuth();
+  const { isAuthenticated, user, loading, hasPermission } = useAuth();
 
   const { 
     customers, 
@@ -38,6 +39,19 @@ function App() {
     generateMonthlyTagihan
   } = useBilling();
 
+  // Dynamic Tab Redirection based on Permissions
+  React.useEffect(() => {
+    if (isAuthenticated && user) {
+      const allTabs = ['home', 'pelanggan', 'tagihan', 'laporan', 'pengaturan'];
+      const allowedTabs = allTabs.filter(tab => hasPermission(tab));
+      
+      // If activeTab is not allowed, select the first allowed tab
+      if (allowedTabs.length > 0 && !allowedTabs.includes(activeTab)) {
+        setActiveTab(allowedTabs[0]);
+      }
+    }
+  }, [isAuthenticated, user, hasPermission, activeTab]);
+
   React.useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
@@ -52,7 +66,7 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center transition-colors">
         <div className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 bg-brand/10 rounded-[24px] flex items-center justify-center">
              <div className="w-10 h-10 border-4 border-brand/20 border-t-brand rounded-full animate-spin"></div>
@@ -75,9 +89,7 @@ function App() {
     setSelectedForDetail(customer);
   };
 
-
-
-  // 1. Not Logged In
+  // 1. Not Authenticated
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen font-outfit max-w-md mx-auto relative shadow-2xl overflow-hidden border-x border-[var(--border-color)] transition-colors">
@@ -87,28 +99,28 @@ function App() {
     );
   }
 
-  // 2. Petugas / Teknisi View (Minimalist)
-  if (isPetugas || isTeknisi) {
-    return (
-      <div className="min-h-screen font-outfit max-w-md mx-auto relative shadow-2xl overflow-hidden border-x border-[var(--border-color)] transition-colors">
-        <MeshBackground />
-        <div className="relative z-10 flex flex-col h-screen">
-          <TopBar 
-            customMonth={currentMonth} 
-            isAdmin={false} 
-            onMonthChange={setSelectedMonth}
-            isDarkMode={isDarkMode}
-            toggleDarkMode={toggleDarkMode}
-          />
-          <main className="flex-1 overflow-y-auto">
-            {isTeknisi ? (
-              <Tagihan 
-                customers={customers} 
-                onPayment={handlePayment} 
-                currentMonth={currentMonth}
-                onGenerate={generateMonthlyTagihan}
-                isSyncing={isSyncing}
-                isAdmin={false}
+  // 2. Authenticated Multi-Role Dynamic UI
+  return (
+    <div className="min-h-screen font-outfit max-w-md mx-auto relative shadow-2xl overflow-hidden border-x border-[var(--border-color)] transition-colors">
+      <MeshBackground />
+      
+      <div className="relative z-10 flex flex-col h-screen pb-20">
+        <TopBar 
+          customMonth={currentMonth} 
+          isAdmin={user?.role === 'admin' || user?.role === 'owner'} 
+          onMonthChange={setSelectedMonth}
+          isDarkMode={isDarkMode}
+          toggleDarkMode={toggleDarkMode}
+        />
+        
+        <main className="flex-1 overflow-y-auto animate-fade-in-up pt-6">
+          {/* Dynamic Variant of HOME View */}
+          {activeTab === 'home' && (
+            (user?.role === 'admin' || user?.role === 'owner') ? (
+              <Dashboard 
+                summary={summary} 
+                transactions={transactions} 
+                onViewAll={() => setActiveTab('laporan')} 
               />
             ) : (
               <FieldDashboard 
@@ -117,95 +129,13 @@ function App() {
                 customMonth={currentMonth}
                 onMonthChange={setSelectedMonth}
               />
-            )}
-          </main>
-        </div>
-        <PaymentBottomSheet 
-          isOpen={!!selectedCustomer}
-          onClose={() => setSelectedCustomer(null)}
-          customer={selectedCustomer}
-          onPay={handlePayment}
-        />
-        <CustomerDetailSheet 
-          isOpen={!!selectedForDetail}
-          onClose={() => setSelectedForDetail(null)}
-          customer={selectedForDetail}
-          onUpdate={async (updated) => {
-            const success = await updateCustomer(updated.id, {
-              name: updated.name,
-              address: updated.address,
-              phone: updated.phone,
-              package: updated.package,
-              price: updated.price
-            });
-            if (success) setSelectedForDetail(null);
-          }}
-          onDelete={async (id) => {
-            const confirmDelete = window.confirm('Apakah Anda yakin ingin menghapus pelanggan ini beserta seluruh riwayat pembayarannya?');
-            if (confirmDelete) {
-              const success = await deleteCustomer(id);
-              if (success) setSelectedForDetail(null);
-            }
-          }}
-        />
-        <Toaster position="top-center" richColors />
-      </div>
-    );
-  }
-
-  // 3. Owner View (Reports Only)
-  if (isOwner) {
-    return (
-      <div className="min-h-screen font-outfit max-w-md mx-auto relative shadow-2xl overflow-hidden border-x border-[var(--border-color)] transition-colors">
-        <MeshBackground />
-        <div className="relative z-10 flex flex-col h-screen">
-          <TopBar 
-            customMonth={currentMonth} 
-            isAdmin={true} 
-            onMonthChange={setSelectedMonth}
-            isDarkMode={isDarkMode}
-            toggleDarkMode={toggleDarkMode}
-          />
-          <main className="flex-1 overflow-y-auto pt-6">
-            <Laporan 
-              summary={summary} 
-              onSync={manualSync} 
-              isSyncing={isSyncing} 
-              customers={customers}
-              transactions={transactions}
-            />
-          </main>
-        </div>
-        <Toaster position="top-center" richColors />
-      </div>
-    );
-  }
-
-  // 4. Admin View (Full Access)
-  return (
-    <div className="min-h-screen font-outfit max-w-md mx-auto relative shadow-2xl overflow-hidden border-x border-[var(--border-color)] transition-colors">
-      <MeshBackground />
-      
-      <div className="relative z-10 flex flex-col h-screen pb-20">
-        <TopBar 
-          customMonth={currentMonth} 
-          isAdmin={true} 
-          onMonthChange={setSelectedMonth}
-          isDarkMode={isDarkMode}
-          toggleDarkMode={toggleDarkMode}
-        />
-        
-        <main className="flex-1 overflow-y-auto animate-fade-in-up">
-          {activeTab === 'home' && (
-            <Dashboard 
-              summary={summary} 
-              transactions={transactions} 
-              onViewAll={() => setActiveTab('laporan')} 
-            />
+            )
           )}
+          
           {activeTab === 'pelanggan' && (
             <Customers customers={customers} onCustomerClick={handleDetailClick} />
           )}
+          
           {activeTab === 'tagihan' && (
             <Tagihan 
               customers={customers} 
@@ -213,9 +143,10 @@ function App() {
               currentMonth={currentMonth}
               onGenerate={generateMonthlyTagihan}
               isSyncing={isSyncing}
-              isAdmin={true}
+              isAdmin={user?.role === 'admin'}
             />
           )}
+          
           {activeTab === 'laporan' && (
             <Laporan 
               summary={summary} 
@@ -225,11 +156,16 @@ function App() {
               transactions={transactions} 
             />
           )}
+
+          {activeTab === 'pengaturan' && (
+            <Pengaturan />
+          )}
         </main>
 
         <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
       </div>
       
+      {/* Payment Modals & Detail Sheets */}
       <PaymentBottomSheet 
         isOpen={!!selectedCustomer}
         onClose={() => setSelectedCustomer(null)}

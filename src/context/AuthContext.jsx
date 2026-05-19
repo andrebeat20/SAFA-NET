@@ -62,12 +62,12 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
-  // Inactivity detection: auto-logout after 5 minutes of inactivity
+  // Inactivity detection: auto-logout after 15 minutes of inactivity
   useEffect(() => {
     if (!user) return;
 
     let timeoutId;
-    const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 Menit
+    const INACTIVITY_LIMIT = 15 * 60 * 1000; // 15 Menit
 
     const logoutDueToInactivity = () => {
       setUser(null);

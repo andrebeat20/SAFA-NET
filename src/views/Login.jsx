@@ -40,12 +40,12 @@ export default function Login({ isDarkMode, toggleDarkMode }) {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.6, type: 'spring' }}
-            className="inline-flex items-center justify-center w-20 h-20 rounded-[24px] bg-gradient-to-tr from-brand via-brand to-brand-light text-white mb-5 shadow-xl shadow-brand/20 dark:shadow-none overflow-hidden p-3"
+            className="inline-flex items-center justify-center w-[500px] h-[500px] max-w-full mb-5 overflow-hidden bg-transparent"
           >
             {appLogo ? (
-              <img src={appLogo} alt="Logo" className="w-full h-full object-contain rounded-xl" />
+              <img src={appLogo} alt="Logo" className="w-full h-full object-contain" />
             ) : (
-              <Wifi className="w-10 h-10 animate-pulse" style={{ animationDuration: '2s' }} />
+              <Wifi className="w-40 h-40 text-brand animate-pulse" style={{ animationDuration: '2s' }} />
             )}
           </motion.div>
           

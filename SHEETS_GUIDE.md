@@ -423,7 +423,7 @@ function doGet(e) {
                  "&bottom_margin=0.25" +
                  "&left_margin=0.25" +
                  "&right_margin=0.25" +
-                 "&gridlines=true" +        // Tampilkan garis tabel
+                 "&gridlines=false" +       // Jangan tampilkan garis tabel (gridlines)
                  "&sheetnames=false" +
                  "&printtitle=false" +
                  "&pagenum=UNDEFINED";      // Tanpa nomor halaman

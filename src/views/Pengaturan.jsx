@@ -628,7 +628,9 @@ export default function Pengaturan() {
                       disabled={isSavingUser}
                       className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand text-xs font-semibold outline-none transition-all cursor-pointer"
                     >
-                      <option value="admin">Administrator (Full Access)</option>
+                      {selectedUser?.role === 'admin' && (
+                        <option value="admin">Administrator (Full Access)</option>
+                      )}
                       <option value="teknisi">Teknisi Lapangan</option>
                       <option value="owner">Owner / Pemilik</option>
                       <option value="petugas">Petugas Lapangan</option>

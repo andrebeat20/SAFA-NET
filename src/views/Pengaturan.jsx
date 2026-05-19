@@ -22,12 +22,6 @@ export default function Pengaturan() {
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null); // null means adding a new user, else editing
   
-  // User Form fields
-  const [formName, setFormName] = useState('');
-  const [formUsername, setFormUsername] = useState('');
-  const [formPassword, setFormPassword] = useState('');
-  const [formRole, setFormRole] = useState('petugas');
-  const [formPhone, setFormPhone] = useState('');
   const [isSavingUser, setIsSavingUser] = useState(false);
 
   // Role Permissions states
@@ -106,29 +100,18 @@ export default function Pengaturan() {
   // Open User Modal for Creation
   const handleAddUserClick = () => {
     setSelectedUser(null);
-    setFormName('');
-    setFormUsername('');
-    setFormPassword('');
-    setFormRole('petugas');
-    setFormPhone('');
     setIsUserModalOpen(true);
   };
 
   // Open User Modal for Editing
   const handleEditUserClick = (user) => {
     setSelectedUser(user);
-    setFormName(user.name);
-    setFormUsername(user.username);
-    setFormPassword(user.password);
-    setFormRole(user.role);
-    setFormPhone(user.phone || '');
     setIsUserModalOpen(true);
   };
 
   // Save User (Create or Update)
-  const handleSaveUser = async (e) => {
-    e.preventDefault();
-    if (!formName || !formUsername || !formPassword) {
+  const handleSaveUser = async (userData) => {
+    if (!userData.name || !userData.username || !userData.password) {
       toast.error('Nama, Username, dan Password wajib diisi!');
       return;
     }
@@ -140,30 +123,30 @@ export default function Pengaturan() {
         const { error } = await supabase
           .from('app_users')
           .update({
-            name: formName,
-            username: formUsername,
-            password: formPassword,
-            role: formRole,
-            phone: formPhone
+            name: userData.name,
+            username: userData.username,
+            password: userData.password,
+            role: userData.role,
+            phone: userData.phone
           })
           .eq('id', selectedUser.id);
 
         if (error) throw error;
-        toast.success(`Berhasil memperbarui pengguna ${formName}!`);
+        toast.success(`Berhasil memperbarui pengguna ${userData.name}!`);
       } else {
         // Create user
         const { error } = await supabase
           .from('app_users')
           .insert({
-            name: formName,
-            username: formUsername,
-            password: formPassword,
-            role: formRole,
-            phone: formPhone
+            name: userData.name,
+            username: userData.username,
+            password: userData.password,
+            role: userData.role,
+            phone: userData.phone
           });
 
         if (error) throw error;
-        toast.success(`Berhasil menambahkan pengguna baru ${formName}!`);
+        toast.success(`Berhasil menambahkan pengguna baru ${userData.name}!`);
       }
 
       setIsUserModalOpen(false);
@@ -522,139 +505,188 @@ export default function Pengaturan() {
         </motion.div>
       </div>
 
-      {/* Dynamic Modal: Add/Edit User */}
-      <AnimatePresence>
-        {isUserModalOpen && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-5"
-              onClick={() => setIsUserModalOpen(false)}
-            >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="w-full max-w-sm bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-[32px] overflow-hidden shadow-2xl p-6 relative z-50 transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Close Button */}
-                <button 
-                  onClick={() => setIsUserModalOpen(false)}
-                  className="absolute top-5 right-5 p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-500 rounded-full transition-all cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-
-                {/* Modal Title */}
-                <div className="mb-6 flex items-center gap-3">
-                  <div className="bg-brand/10 p-2 rounded-xl text-brand">
-                    <Users className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="font-extrabold text-[15px] text-[var(--text-primary)] leading-none">
-                      {selectedUser ? 'Edit Pengguna' : 'Tambah Pengguna'}
-                    </h4>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">
-                      {selectedUser ? 'Perbarui informasi akun' : 'Buat kredensial akun baru'}
-                    </p>
-                  </div>
-                </div>
-
-                <form onSubmit={handleSaveUser} className="space-y-4">
-                  {/* Name Input */}
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Nama Lengkap</label>
-                    <input
-                      type="text"
-                      required
-                      value={formName}
-                      onChange={(e) => setFormName(e.target.value)}
-                      disabled={isSavingUser}
-                      className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand text-xs font-semibold outline-none transition-all"
-                      placeholder="Contoh: Andre Beat"
-                    />
-                  </div>
-
-                  {/* Username Input */}
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Username / ID Login</label>
-                    <input
-                      type="text"
-                      required
-                      value={formUsername}
-                      onChange={(e) => setFormUsername(e.target.value)}
-                      disabled={isSavingUser}
-                      className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand text-xs font-semibold outline-none transition-all"
-                      placeholder="Contoh: andre_lapangan"
-                    />
-                  </div>
-
-                  {/* Password Input */}
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Kata Sandi (Password)</label>
-                    <input
-                      type="text" // Plaintext helper for easy management by admin
-                      required
-                      value={formPassword}
-                      onChange={(e) => setFormPassword(e.target.value)}
-                      disabled={isSavingUser}
-                      className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand text-xs font-semibold outline-none transition-all"
-                      placeholder="Ketik password pengguna..."
-                    />
-                  </div>
-
-                  {/* Phone Input */}
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">No HP / WhatsApp (Opsional)</label>
-                    <input
-                      type="text"
-                      value={formPhone}
-                      onChange={(e) => setFormPhone(e.target.value)}
-                      disabled={isSavingUser}
-                      className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand text-xs font-semibold outline-none transition-all"
-                      placeholder="Contoh: 081234567890"
-                    />
-                  </div>
-
-                  {/* Role Select Input */}
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Hak Akses (Role)</label>
-                    <select
-                      value={formRole}
-                      onChange={(e) => setFormRole(e.target.value)}
-                      disabled={isSavingUser}
-                      className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand text-xs font-semibold outline-none transition-all cursor-pointer"
-                    >
-                      {selectedUser?.role === 'admin' && (
-                        <option value="admin">Administrator (Full Access)</option>
-                      )}
-                      <option value="teknisi">Teknisi Lapangan</option>
-                      <option value="owner">Owner / Pemilik</option>
-                      <option value="petugas">Petugas Lapangan</option>
-                    </select>
-                  </div>
-
-                  {/* Submit Button */}
-                  <div className="pt-3">
-                    <button
-                      type="submit"
-                      disabled={isSavingUser}
-                      className="w-full flex justify-center items-center py-3.5 px-4 rounded-2xl shadow-lg shadow-brand/10 text-xs font-black tracking-wider text-white bg-gradient-to-r from-brand to-brand-dark hover:brightness-110 transition-all disabled:opacity-70 cursor-pointer"
-                    >
-                      {isSavingUser ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                      {selectedUser ? 'SIMPAN PERUBAHAN' : 'BUAT AKUN PENGGUNA'}
-                    </button>
-                  </div>
-                </form>
-              </motion.div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      {/* Dynamic Modal: Add/Edit User (Optimized Component) */}
+      <UserModal 
+        isOpen={isUserModalOpen} 
+        onClose={() => setIsUserModalOpen(false)} 
+        selectedUser={selectedUser} 
+        onSave={handleSaveUser} 
+        isSaving={isSavingUser} 
+      />
 
     </div>
+  );
+}
+
+// Sub-komponen Modal Teroptimasi agar ketikan input lancar tanpa render ulang induk
+function UserModal({ isOpen, onClose, selectedUser, onSave, isSaving }) {
+  const [formName, setFormName] = useState('');
+  const [formUsername, setFormUsername] = useState('');
+  const [formPassword, setFormPassword] = useState('');
+  const [formRole, setFormRole] = useState('petugas');
+  const [formPhone, setFormPhone] = useState('');
+
+  useEffect(() => {
+    if (selectedUser) {
+      setFormName(selectedUser.name || '');
+      setFormUsername(selectedUser.username || '');
+      setFormPassword(selectedUser.password || '');
+      setFormRole(selectedUser.role || 'petugas');
+      setFormPhone(selectedUser.phone || '');
+    } else {
+      setFormName('');
+      setFormUsername('');
+      setFormPassword('');
+      setFormRole('petugas');
+      setFormPhone('');
+    }
+  }, [selectedUser, isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave({
+      name: formName,
+      username: formUsername,
+      password: formPassword,
+      role: formRole,
+      phone: formPhone
+    });
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-5"
+            onClick={onClose}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="w-full max-w-sm bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-[32px] overflow-hidden shadow-2xl p-6 relative z-50 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button 
+                onClick={onClose}
+                className="absolute top-5 right-5 p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-500 rounded-full transition-all cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              {/* Modal Title */}
+              <div className="mb-6 flex items-center gap-3">
+                <div className="bg-brand/10 p-2 rounded-xl text-brand">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-[15px] text-[var(--text-primary)] leading-none">
+                    {selectedUser ? 'Edit Pengguna' : 'Tambah Pengguna'}
+                  </h4>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">
+                    {selectedUser ? 'Perbarui informasi akun' : 'Buat kredensial akun baru'}
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Name Input */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Nama Lengkap</label>
+                  <input
+                    type="text"
+                    required
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    disabled={isSaving}
+                    className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand text-xs font-semibold outline-none transition-all"
+                    placeholder="Contoh: Andre Beat"
+                  />
+                </div>
+
+                {/* Username Input */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Username / ID Login</label>
+                  <input
+                    type="text"
+                    required
+                    value={formUsername}
+                    onChange={(e) => setFormUsername(e.target.value)}
+                    disabled={isSaving}
+                    className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand text-xs font-semibold outline-none transition-all"
+                    placeholder="Contoh: andre_lapangan"
+                  />
+                </div>
+
+                {/* Password Input */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Kata Sandi (Password)</label>
+                  <input
+                    type="text"
+                    required
+                    value={formPassword}
+                    onChange={(e) => setFormPassword(e.target.value)}
+                    disabled={isSaving}
+                    className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand text-xs font-semibold outline-none transition-all"
+                    placeholder="Ketik password pengguna..."
+                  />
+                </div>
+
+                {/* Phone Input */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">No HP / WhatsApp (Opsional)</label>
+                  <input
+                    type="text"
+                    value={formPhone}
+                    onChange={(e) => setFormPhone(e.target.value)}
+                    disabled={isSaving}
+                    className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand text-xs font-semibold outline-none transition-all"
+                    placeholder="Contoh: 081234567890"
+                  />
+                </div>
+
+                {/* Role Select Input */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Hak Akses (Role)</label>
+                  <select
+                    value={formRole}
+                    onChange={(e) => setFormRole(e.target.value)}
+                    disabled={isSaving}
+                    className="block w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand text-xs font-semibold outline-none transition-all cursor-pointer"
+                  >
+                    {selectedUser?.role === 'admin' && (
+                      <option value="admin">Administrator (Full Access)</option>
+                    )}
+                    <option value="teknisi">Teknisi Lapangan</option>
+                    <option value="owner">Owner / Pemilik</option>
+                    <option value="petugas">Petugas Lapangan</option>
+                  </select>
+                </div>
+
+                {/* Submit Button */}
+                <div className="pt-3">
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="w-full flex justify-center items-center py-3.5 px-4 rounded-2xl shadow-lg shadow-brand/10 text-xs font-black tracking-wider text-white bg-gradient-to-r from-brand to-brand-dark hover:brightness-110 transition-all disabled:opacity-70 cursor-pointer"
+                  >
+                    {isSaving ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                    {selectedUser ? 'SIMPAN PERUBAHAN' : 'BUAT AKUN PENGGUNA'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }

@@ -13,10 +13,9 @@ export default function FieldHeader({
 }) {
   const [showPicker, setShowPicker] = useState(false);
 
-  // Daftar periode bulan MEI - DESEMBER 2026
+  // Daftar periode bulan JUNI - DESEMBER 2026
   const months = useMemo(() => {
     return [
-      'MEI 2026',
       'JUNI 2026',
       'JULI 2026',
       'AGUSTUS 2026',

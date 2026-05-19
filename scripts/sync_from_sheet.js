@@ -168,7 +168,7 @@ async function sync() {
               customer_name: dbCust.name,
               amount: dbCust.price,
               method: method,
-              bulan_tagihan: 'MEI', // Fallback default month
+              bulan_tagihan: 'JUNI 2026', // Fallback default month
               date: new Date().toISOString()
             });
           }

@@ -7,9 +7,7 @@ export function useBilling() {
   const [transactions, setTransactions] = useState([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedMonth, setSelectedMonth] = useState(
-    new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(new Date()).toUpperCase()
-  );
+  const [selectedMonth, setSelectedMonth] = useState('JUNI 2026');
 
   const currentMonthName = selectedMonth;
 

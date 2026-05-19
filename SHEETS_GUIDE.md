@@ -216,19 +216,24 @@ function doPost(e) {
         })).setMimeType(ContentService.MimeType.JSON);
       }
       
-      // 3. Bersihkan pembayaran dan setel ulang "BELUM BAYAR" di tab baru
-      for (var r = headerIndex + 2; r <= lastRow; r++) {
-        // Lewati jika kolom nama pelanggan kosong atau berisi total
-        var nameCell = newSheet.getRange(r, 2).getValue();
-        if (!nameCell || nameCell.toString().toLowerCase().indexOf("total") !== -1) continue;
+      // 3. Bersihkan pembayaran lama dan reset kolom BELUM BAYAR secara cepat (Batch Write)
+      if (lastRow >= headerIndex + 2) {
+        var startRow = headerIndex + 2;
+        var numRows = lastRow - startRow + 1;
         
-        var price = newSheet.getRange(r, 5).getValue() || 0; // Kolom E (Harga)
+        // Kolom G (Keterangan) dikosongkan, H (KELILING), I (KANTOR), J (TRANSFER) disetel ""
+        var clearValues = [];
+        // Kolom K (BELUM BAYAR) diisi dengan nominal harga dari Kolom E (Harga)
+        var priceRange = newSheet.getRange(startRow, 5, numRows, 1).getValues();
+        var belumBayarValues = [];
         
-        newSheet.getRange(r, 7).setValue("");     // Kolom G (Keterangan)
-        newSheet.getRange(r, 8).setValue("");     // Kolom H (KELILING)
-        newSheet.getRange(r, 9).setValue("");     // Kolom I (KANTOR)
-        newSheet.getRange(r, 10).setValue("");    // Kolom J (TRANSFER)
-        newSheet.getRange(r, 11).setValue(price); // Kolom K (BELUM BAYAR = Nominal Harga)
+        for (var i = 0; i < numRows; i++) {
+          clearValues.push(["", "", "", ""]); // G, H, I, J
+          belumBayarValues.push([priceRange[i][0] || 0]); // K
+        }
+        
+        newSheet.getRange(startRow, 7, numRows, 4).setValues(clearValues);
+        newSheet.getRange(startRow, 11, numRows, 1).setValues(belumBayarValues);
       }
       
       // 4. Reset tabel SETORAN TAHAP 1 - 30 (Kolom M ke U, baris 4 sampai 33)
@@ -430,6 +435,16 @@ function doGet(e) {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var id = ss.getId();
     
+    // Ambil parameter bulan untuk download spesifik tab saja
+    var month = e.parameter.month;
+    var gidParam = "";
+    if (month) {
+      var sheet = ss.getSheetByName(month);
+      if (sheet) {
+        gidParam = "&gid=" + sheet.getSheetId();
+      }
+    }
+    
     // URL ekspor PDF dengan format persis: A4, Portrait, Custom Scale 38%, Margin Narrow (0.25 inci)
     var pdfUrl = "https://docs.google.com/spreadsheets/d/" + id + "/export?" +
                  "exportFormat=pdf&format=pdf" +
@@ -444,7 +459,8 @@ function doGet(e) {
                  "&gridlines=false" +       // Jangan tampilkan garis tabel (gridlines)
                  "&sheetnames=false" +
                  "&printtitle=false" +
-                 "&pagenum=UNDEFINED";      // Tanpa nomor halaman
+                 "&pagenum=UNDEFINED" +     // Tanpa nomor halaman
+                 gidParam;                  // Filter agar hanya mengunduh tab bulan terkait
                  
     var html = "<html><body style='font-family:sans-serif; text-align:center; padding:100px 20px; color:#333; background:#fafafa;'>" +
                "<div style='max-width:500px; margin:0 auto; padding:40px; background:#fff; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05);'>" +

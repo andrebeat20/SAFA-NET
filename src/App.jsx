@@ -151,6 +151,7 @@ function App() {
               isSyncing={isSyncing} 
               customers={customers} 
               transactions={transactions} 
+              currentMonth={currentMonth}
             />
           )}
 

@@ -2,9 +2,13 @@ import React from 'react';
 import { RefreshCcw, Download } from 'lucide-react';
 import clsx from 'clsx';
 
-export default function LaporanActions({ onSync, isSyncing }) {
+export default function LaporanActions({ onSync, isSyncing, currentMonth }) {
   const syncUrl = import.meta.env.VITE_SHEETS_SYNC_URL;
-  const pdfDownloadUrl = syncUrl || "https://docs.google.com/spreadsheets/d/1a3fOlaFFxjZzWG-ycD4GPlHmjTgkd7djcfmJ_E3NKJM/export?exportFormat=pdf&format=pdf&size=a4&portrait=true&scale=5&spct=0.38&top_margin=0.25&bottom_margin=0.25&left_margin=0.25&right_margin=0.25&gridlines=false";
+  
+  // URL download PDF dinamis per bulan terkait
+  const pdfDownloadUrl = syncUrl 
+    ? `${syncUrl}?month=${encodeURIComponent(currentMonth)}`
+    : `https://docs.google.com/spreadsheets/d/1a3fOlaFFxjZzWG-ycD4GPlHmjTgkd7djcfmJ_E3NKJM/export?exportFormat=pdf&format=pdf&size=a4&portrait=true&scale=5&spct=0.38&top_margin=0.25&bottom_margin=0.25&left_margin=0.25&right_margin=0.25&gridlines=false`;
 
   return (
     <div className="space-y-4 px-1">

@@ -6,7 +6,7 @@ import LaporanBreakdown from '../components/laporan/LaporanBreakdown';
 import LaporanActions from '../components/laporan/LaporanActions';
 import LaporanTable from '../components/laporan/LaporanTable';
 
-export default function Laporan({ summary, onSync, isSyncing, customers, transactions }) {
+export default function Laporan({ summary, onSync, isSyncing, customers, transactions, currentMonth }) {
   return (
     <div className="pb-24">
       <div className="px-4 py-6">
@@ -16,7 +16,7 @@ export default function Laporan({ summary, onSync, isSyncing, customers, transac
         <LaporanStats summary={summary} />
         <LaporanBreakdown summary={summary} />
         
-        <LaporanActions onSync={onSync} isSyncing={isSyncing} />
+        <LaporanActions onSync={onSync} isSyncing={isSyncing} currentMonth={currentMonth} />
         
         <LaporanTable customers={customers} transactions={transactions} />
 

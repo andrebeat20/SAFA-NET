@@ -17,7 +17,7 @@ export default function Login({ isDarkMode, toggleDarkMode }) {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col justify-center px-6 py-12 relative overflow-hidden font-outfit transition-colors duration-500">
+    <div className="min-h-dvh bg-[var(--bg-primary)] flex flex-col justify-center px-6 py-12 relative overflow-hidden font-outfit transition-colors duration-500">
       {/* Floating Theme Toggle */}
       <button
         type="button"

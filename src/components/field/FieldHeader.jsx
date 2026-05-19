@@ -31,7 +31,7 @@ export default function FieldHeader({
       <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 dark:bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
       <div className="absolute bottom-0 left-0 w-32 h-32 bg-brand-light/20 dark:bg-brand-light/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
       
-      <div className="relative px-6 pt-12 pb-10">
+      <div className="relative px-6 pt-16 pb-10">
         <div className="flex justify-between items-center mb-8">
           <div>
             <p className="text-brand-light text-[11px] font-black mb-1.5 tracking-[0.2em] uppercase opacity-90">Halo, {user?.name}</p>

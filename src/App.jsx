@@ -92,7 +92,7 @@ function App() {
   // 1. Not Authenticated
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen font-outfit max-w-md mx-auto relative shadow-2xl overflow-hidden border-x border-[var(--border-color)] transition-colors">
+      <div className="min-h-dvh font-outfit max-w-md mx-auto relative shadow-2xl overflow-hidden border-x border-[var(--border-color)] transition-colors">
         <Login isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
         <Toaster position="top-center" richColors />
       </div>
@@ -101,10 +101,10 @@ function App() {
 
   // 2. Authenticated Multi-Role Dynamic UI
   return (
-    <div className="min-h-screen font-outfit max-w-md mx-auto relative shadow-2xl overflow-hidden border-x border-[var(--border-color)] transition-colors">
+    <div className="min-h-dvh font-outfit max-w-md mx-auto relative shadow-2xl overflow-hidden border-x border-[var(--border-color)] transition-colors">
       <MeshBackground />
       
-      <div className="relative z-10 flex flex-col h-screen pb-20">
+      <div className="relative z-10 flex flex-col h-dvh pb-20">
         {/* Render TopBar only for Admins/Owners, or when on other tabs for non-admin users (FieldDashboard has its own FieldHeader) */}
         {(user?.role === 'admin' || user?.role === 'owner' || activeTab !== 'home') && (
           <TopBar 

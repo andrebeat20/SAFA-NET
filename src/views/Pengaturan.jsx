@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   Building, Users, Shield, Plus, Edit2, Trash2, CheckCircle2, 
-  XCircle, Save, Key, RefreshCw, Upload, Eye, EyeOff, X 
+  XCircle, Save, Key, RefreshCw, Upload, Eye, EyeOff, X, Loader2 
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -224,7 +224,7 @@ export default function Pengaturan() {
           .from('app_settings')
           .update({
             app_name: appNameInput,
-            app_logo: appLogoInput
+            logo_data: appLogoInput
           })
           .eq('id', existing.id);
         error = updateErr;
@@ -233,8 +233,9 @@ export default function Pengaturan() {
         const { error: insertErr } = await supabase
           .from('app_settings')
           .insert({
+            id: 1,
             app_name: appNameInput,
-            app_logo: appLogoInput
+            logo_data: appLogoInput
           });
         error = insertErr;
       }

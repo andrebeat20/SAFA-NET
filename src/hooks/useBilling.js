@@ -130,7 +130,8 @@ export function useBilling() {
     }
   };
 
-  const manualSync = async (monthName = selectedMonth) => {
+  const manualSync = async (monthName) => {
+    const targetMonth = typeof monthName === 'string' ? monthName : selectedMonth;
     setIsSyncing(true);
     const syncUrl = import.meta.env.VITE_SHEETS_SYNC_URL;
     if (!syncUrl) {
@@ -139,7 +140,7 @@ export function useBilling() {
       return;
     }
 
-    toast.loading(`Menyelaraskan data untuk ${monthName}...`, { id: 'sheet-sync' });
+    toast.loading(`Menyelaraskan data untuk ${targetMonth}...`, { id: 'sheet-sync' });
 
     try {
       const res = await fetch(syncUrl, {
@@ -149,7 +150,7 @@ export function useBilling() {
         },
         body: JSON.stringify({
           action: "fetch_sheet",
-          sheet_name: monthName
+          sheet_name: targetMonth
         })
       });
 
@@ -188,10 +189,10 @@ export function useBilling() {
       if (customersToInsert.length > 0) {
         toast.success('Sinkronisasi Sukses!', {
           id: 'sheet-sync',
-          description: `Telah menyelaraskan ${customersToInsert.length} data pelanggan bulan ${monthName} ke database.`
+          description: `Telah menyelaraskan ${customersToInsert.length} data pelanggan bulan ${targetMonth} ke database.`
         });
       } else {
-        toast.success(`Tab bulan ${monthName} kosong, data dikosongkan.`, {
+        toast.success(`Tab bulan ${targetMonth} kosong, data dikosongkan.`, {
           id: 'sheet-sync'
         });
       }
@@ -204,7 +205,8 @@ export function useBilling() {
     }
   };
 
-  const generateMonthlyTagihan = async (monthName = selectedMonth) => {
+  const generateMonthlyTagihan = async (monthName) => {
+    const targetMonth = typeof monthName === 'string' ? monthName : selectedMonth;
     setIsSyncing(true);
     const syncUrl = import.meta.env.VITE_SHEETS_SYNC_URL;
     if (!syncUrl) {
@@ -213,7 +215,7 @@ export function useBilling() {
       return false;
     }
 
-    toast.loading(`Sedang mengenerate tagihan bulan ${monthName}...`, { id: 'sheet-gen' });
+    toast.loading(`Sedang mengenerate tagihan bulan ${targetMonth}...`, { id: 'sheet-gen' });
 
     try {
       const res = await fetch(syncUrl, {
@@ -223,7 +225,7 @@ export function useBilling() {
         },
         body: JSON.stringify({
           action: "generate_month",
-          sheet_name: monthName
+          sheet_name: targetMonth
         })
       });
 
@@ -261,7 +263,7 @@ export function useBilling() {
 
       toast.success('Sukses Generate!', {
         id: 'sheet-gen',
-        description: `Berhasil mengenerate dan menyelaraskan ${customersToInsert.length} data tagihan baru untuk bulan ${monthName}.`
+        description: `Berhasil mengenerate dan menyelaraskan ${customersToInsert.length} data tagihan baru untuk bulan ${targetMonth}.`
       });
       return true;
 

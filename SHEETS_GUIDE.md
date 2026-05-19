@@ -301,8 +301,10 @@ function doPost(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
     
-    // 1. Kosongkan Kolom G (Keterangan) dan Kolom K (BELUM BAYAR)
-    sheet.getRange(targetRow, 7).setValue("");  // Kolom G
+    // 1. Set Kolom G (Keterangan) sesuai metode pembayaran, dan kosongkan Kolom K (BELUM BAYAR)
+    var ketVal = method.toUpperCase();
+    if (ketVal === "KANTOR") ketVal = "TUNAI KANTOR";
+    sheet.getRange(targetRow, 7).setValue(ketVal);  // Kolom G
     sheet.getRange(targetRow, 11).setValue(""); // Kolom K
     
     // 2. Isi nominal ke kolom pembayaran yang sesuai
@@ -370,7 +372,7 @@ function doPost(e) {
       sheet.getRange(newRow, 13, 1, 7).setHorizontalAlignment("center");
       sheet.getRange(newRow, 20).setHorizontalAlignment("left");
       sheet.getRange(newRow, 13, 1, 9)
-           .setBorder(true, true, true, true, true, true, "#cccccc", SpreadsheetApp.BorderStyle.SOLID);
+           .setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
     } else {
       // Update baris hari ini yang sudah ada
       if (method === "Keliling") {

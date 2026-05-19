@@ -54,13 +54,49 @@ export function AuthProvider({ children }) {
     // 1. Load app branding settings
     loadAppSettings();
     
-    // 2. Load cached user from localStorage
-    const savedUser = localStorage.getItem('safanet_user');
+    // 2. Load cached user from sessionStorage
+    const savedUser = sessionStorage.getItem('safanet_user');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
     setLoading(false);
   }, []);
+
+  // Inactivity detection: auto-logout after 5 minutes of inactivity
+  useEffect(() => {
+    if (!user) return;
+
+    let timeoutId;
+    const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 Menit
+
+    const logoutDueToInactivity = () => {
+      setUser(null);
+      sessionStorage.removeItem('safanet_user');
+      toast.info('Sesi Anda telah berakhir karena tidak ada aktivitas.');
+    };
+
+    const resetTimer = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(logoutDueToInactivity, INACTIVITY_LIMIT);
+    };
+
+    // Listen to user activities
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    events.forEach(event => {
+      window.addEventListener(event, resetTimer);
+    });
+
+    // Start initial timer
+    resetTimer();
+
+    // Cleanup listeners
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      events.forEach(event => {
+        window.removeEventListener(event, resetTimer);
+      });
+    };
+  }, [user]);
 
   const login = async (username, password) => {
     if (!username || !password) {
@@ -95,7 +131,7 @@ export function AuthProvider({ children }) {
 
         await new Promise(resolve => setTimeout(resolve, 800));
         setUser(userData);
-        localStorage.setItem('safanet_user', JSON.stringify(userData));
+        sessionStorage.setItem('safanet_user', JSON.stringify(userData));
         toast.warning(`Tabel database belum di-setup! Masuk dalam Mode Demo sebagai ${userData.name}. Silakan run init_db.sql di Supabase.`, {
           duration: 6000
         });
@@ -131,7 +167,7 @@ export function AuthProvider({ children }) {
       };
 
       setUser(userData);
-      localStorage.setItem('safanet_user', JSON.stringify(userData));
+      sessionStorage.setItem('safanet_user', JSON.stringify(userData));
       toast.success(`Selamat datang kembali, ${userData.name}!`);
       return true;
 
@@ -145,7 +181,7 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     await new Promise(resolve => setTimeout(resolve, 500));
     setUser(null);
-    localStorage.removeItem('safanet_user');
+    sessionStorage.removeItem('safanet_user');
     toast.success('Berhasil keluar');
   };
 

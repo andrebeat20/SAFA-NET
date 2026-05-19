@@ -1,13 +1,29 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import CustomerCard from '../components/customer/CustomerCard';
-import { AlertCircle, Bike, CreditCard, Building2 } from 'lucide-react';
+import { AlertCircle, Bike, CreditCard, Building2, Search, X } from 'lucide-react';
 
 export default function Tagihan({ customers, onPayment, currentMonth, onGenerate, isSyncing, isAdmin }) {
-  const unpaidCustomers = customers.filter(c => c.status === 'Belum Bayar');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // 1. Get all static unpaid customers for empty check
+  const unpaidCustomers = useMemo(() => {
+    return customers.filter(c => c.status === 'Belum Bayar');
+  }, [customers]);
+
+  // 2. Dynamically filter unpaid customers by search term
+  const filteredUnpaid = useMemo(() => {
+    if (!searchTerm) return unpaidCustomers;
+    const lowerSearch = searchTerm.toLowerCase();
+    return unpaidCustomers.filter(c => 
+      c.name.toLowerCase().includes(lowerSearch) || 
+      (c.address && c.address.toLowerCase().includes(lowerSearch)) ||
+      (c.phone && c.phone.includes(lowerSearch))
+    );
+  }, [unpaidCustomers, searchTerm]);
 
   if (customers.length === 0) {
     return (
-      <div className="pb-24 pt-6 px-4">
+      <div className="pb-24 pt-6 px-4 font-outfit">
         <div className="px-5 py-6">
           <div className="flex items-center gap-4 mb-8">
             <div className="bg-rose-100 dark:bg-rose-500/20 p-3 rounded-2xl text-rose-500">
@@ -48,8 +64,10 @@ export default function Tagihan({ customers, onPayment, currentMonth, onGenerate
   }
 
   return (
-    <div className="pb-24 pt-6 px-4">
+    <div className="pb-24 pt-6 px-4 font-outfit">
       <div className="px-5 py-6">
+        
+        {/* Title and Generator Header */}
         <div className="flex items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
             <div className="bg-rose-100 dark:bg-rose-500/20 p-3 rounded-2xl text-rose-500">
@@ -73,46 +91,79 @@ export default function Tagihan({ customers, onPayment, currentMonth, onGenerate
         </div>
 
         {unpaidCustomers.length > 0 ? (
-          <div className="space-y-8">
-            <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 p-5 rounded-3xl transition-colors">
-              <p className="text-[13px] text-rose-800 dark:text-rose-400 font-bold">
+          <div className="space-y-6">
+            
+            {/* Unpaid Counter Info */}
+            <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 p-4 rounded-2xl transition-colors">
+              <p className="text-[12px] text-rose-800 dark:text-rose-400 font-bold">
                 Ada {unpaidCustomers.length} pelanggan yang belum melakukan pembayaran bulan ini.
               </p>
             </div>
-            
-            <div className="space-y-8">
-              {unpaidCustomers.map(customer => (
-                <div key={customer.id} className="space-y-4">
-                  <CustomerCard 
-                    customer={customer} 
-                    onClick={() => {}} // Disabled click since we have buttons
-                  />
-                  <div className="grid grid-cols-3 gap-3 px-1">
-                    <button 
-                      onClick={() => onPayment(customer.id, 'Keliling')}
-                      className="flex flex-col items-center gap-2 py-4 bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 rounded-[24px] text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-500/20 transition-all active:scale-95"
-                    >
-                      <Bike className="w-6 h-6" />
-                      <span className="text-[10px] font-black uppercase tracking-wider">Keliling</span>
-                    </button>
-                    <button 
-                      onClick={() => onPayment(customer.id, 'Transfer')}
-                      className="flex flex-col items-center gap-2 py-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-[24px] text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all active:scale-95"
-                    >
-                      <CreditCard className="w-6 h-6" />
-                      <span className="text-[10px] font-black uppercase tracking-wider">Transfer</span>
-                    </button>
-                    <button 
-                      onClick={() => onPayment(customer.id, 'Tunai Kantor')}
-                      className="flex flex-col items-center gap-2 py-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-[24px] text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all active:scale-95"
-                    >
-                      <Building2 className="w-6 h-6" />
-                      <span className="text-[10px] font-black uppercase tracking-wider">Tunai</span>
-                    </button>
-                  </div>
-                </div>
-              ))}
+
+            {/* Premium Search Box */}
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-slate-400 group-focus-within:text-brand transition-colors" />
+              </div>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="block w-full pl-10 pr-10 py-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/80 dark:border-slate-800/80 text-[var(--text-primary)] rounded-2xl focus:ring-4 focus:ring-brand/10 focus:border-brand focus:bg-white dark:focus:bg-slate-950 transition-all text-xs font-semibold outline-none"
+                placeholder="Cari nama, alamat, atau no HP..."
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
+            
+            {/* Unpaid Filtered List */}
+            {filteredUnpaid.length > 0 ? (
+              <div className="space-y-8 pt-2">
+                {filteredUnpaid.map(customer => (
+                  <div key={customer.id} className="space-y-4">
+                    <CustomerCard 
+                      customer={customer} 
+                      onClick={() => {}} // Disabled click since we have buttons
+                    />
+                    <div className="grid grid-cols-3 gap-3 px-1">
+                      <button 
+                        onClick={() => onPayment(customer.id, 'Keliling')}
+                        className="flex flex-col items-center gap-2 py-4 bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 rounded-[24px] text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-500/20 transition-all active:scale-95 cursor-pointer"
+                      >
+                        <Bike className="w-6 h-6" />
+                        <span className="text-[10px] font-black uppercase tracking-wider">Keliling</span>
+                      </button>
+                      <button 
+                        onClick={() => onPayment(customer.id, 'Transfer')}
+                        className="flex flex-col items-center gap-2 py-4 bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 rounded-[24px] text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all active:scale-95 cursor-pointer"
+                      >
+                        <CreditCard className="w-6 h-6" />
+                        <span className="text-[10px] font-black uppercase tracking-wider">Transfer</span>
+                      </button>
+                      <button 
+                        onClick={() => onPayment(customer.id, 'Tunai Kantor')}
+                        className="flex flex-col items-center gap-2 py-4 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-[24px] text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all active:scale-95 cursor-pointer"
+                      >
+                        <Building2 className="w-6 h-6" />
+                        <span className="text-[10px] font-black uppercase tracking-wider">Tunai</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <span className="text-4xl mb-3">🔍</span>
+                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Tidak Ada Hasil Pencarian</p>
+                <p className="text-[10px] text-slate-400 mt-1 max-w-[200px]">Coba cari dengan kata kunci nama atau detail lain.</p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-28 text-center transition-all animate-fade-in-up">

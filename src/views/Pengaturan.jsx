@@ -14,7 +14,54 @@ const defaultPermissions = {
   petugas: { home: true, pelanggan: false, tagihan: true, laporan: false, pengaturan: false }
 };
 
-export default function Pengaturan({ currentPermissions, onSavePermissions }) {
+// Helper to convert DB format JSON array back to frontend Boolean mapping
+const convertToBools = (dbPermissions) => {
+  const result = {
+    admin: { home: true, pelanggan: true, tagihan: true, laporan: true, pengaturan: true },
+    teknisi: { home: false, pelanggan: false, tagihan: false, laporan: false, pengaturan: false },
+    owner: { home: false, pelanggan: false, tagihan: false, laporan: false, pengaturan: false },
+    petugas: { home: false, pelanggan: false, tagihan: false, laporan: false, pengaturan: false }
+  };
+  
+  if (!dbPermissions) return result;
+  
+  const roles = ['teknisi', 'owner', 'petugas'];
+  roles.forEach(role => {
+    const roleArr = dbPermissions[role] || [];
+    roleArr.forEach(feature => {
+      if (result[role]) {
+        result[role][feature] = true;
+      }
+    });
+  });
+  
+  return result;
+};
+
+// Helper to convert frontend Boolean mapping back to DB JSON array format
+const convertToArrays = (boolPermissions) => {
+  const result = {
+    admin: ["home", "pelanggan", "tagihan", "laporan", "pengaturan"],
+    teknisi: [],
+    owner: [],
+    petugas: []
+  };
+  
+  const roles = ['teknisi', 'owner', 'petugas'];
+  const features = ['home', 'pelanggan', 'tagihan', 'laporan', 'pengaturan'];
+  
+  roles.forEach(role => {
+    features.forEach(feature => {
+      if (boolPermissions[role]?.[feature]) {
+        result[role].push(feature);
+      }
+    });
+  });
+  
+  return result;
+};
+
+export default function Pengaturan() {
   const [users, setUsers] = useState([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
@@ -22,7 +69,7 @@ export default function Pengaturan({ currentPermissions, onSavePermissions }) {
   const [isSavingUser, setIsSavingUser] = useState(false);
 
   // Role Permissions states
-  const [permissions, setPermissions] = useState(currentPermissions);
+  const [permissions, setPermissions] = useState(defaultPermissions);
   const [isSavingPermissions, setIsSavingPermissions] = useState(false);
 
   // App Branding states
@@ -34,8 +81,7 @@ export default function Pengaturan({ currentPermissions, onSavePermissions }) {
   useEffect(() => {
     fetchBranding();
     fetchUsers();
-    setPermissions(currentPermissions);
-  }, [currentPermissions]);
+  }, []);
 
   const fetchBranding = async () => {
     try {
@@ -47,7 +93,10 @@ export default function Pengaturan({ currentPermissions, onSavePermissions }) {
       if (error && error.code !== 'PGRST116') throw error;
       if (data) {
         setAppNameInput(data.app_name || 'SAFA-NET');
-        setAppLogoInput(data.app_logo || '');
+        setAppLogoInput(data.logo_data || '');
+        if (data.role_permissions) {
+          setPermissions(convertToBools(data.role_permissions));
+        }
       }
     } catch (err) {
       console.error('Gagal memuat branding:', err);
@@ -245,10 +294,51 @@ export default function Pengaturan({ currentPermissions, onSavePermissions }) {
   // Save current role permissions matrix
   const handleSavePermissions = async () => {
     setIsSavingPermissions(true);
-    const success = await onSavePermissions(permissions);
-    setIsSavingPermissions(false);
-    if (success) {
+    try {
+      const { data: existing, error: fetchErr } = await supabase
+        .from('app_settings')
+        .select('id')
+        .eq('id', 1)
+        .maybeSingle();
+
+      if (fetchErr) throw fetchErr;
+
+      const dbPermissions = convertToArrays(permissions);
+      let error;
+
+      if (existing) {
+        // Update existing row
+        const { error: updateErr } = await supabase
+          .from('app_settings')
+          .update({
+            role_permissions: dbPermissions
+          })
+          .eq('id', 1);
+        error = updateErr;
+      } else {
+        // Insert new settings row
+        const { error: insertErr } = await supabase
+          .from('app_settings')
+          .insert({
+            id: 1,
+            role_permissions: dbPermissions
+          });
+        error = insertErr;
+      }
+
+      if (error) throw error;
       toast.success('Matriks Hak Akses berhasil diperbarui!');
+      
+      // Reload page after a brief delay to apply changes system-wide
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+      
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal menyimpan matriks hak akses: ' + err.message);
+    } finally {
+      setIsSavingPermissions(false);
     }
   };
 

@@ -116,20 +116,17 @@ function App() {
         <main className="flex-1 overflow-y-auto animate-fade-in-up pt-6">
           {/* Dynamic Variant of HOME View */}
           {activeTab === 'home' && (
-            (user?.role === 'admin' || user?.role === 'owner') ? (
-              <Dashboard 
-                summary={summary} 
-                transactions={transactions} 
-                onViewAll={() => setActiveTab('laporan')} 
-              />
-            ) : (
-              <FieldDashboard 
-                customers={customers} 
-                onCustomerClick={handleDetailClick} 
-                customMonth={currentMonth}
-                onMonthChange={setSelectedMonth}
-              />
-            )
+            <Dashboard 
+              summary={summary} 
+              transactions={transactions} 
+              onViewAll={() => {
+                if (hasPermission('laporan')) {
+                  setActiveTab('laporan');
+                } else if (hasPermission('tagihan')) {
+                  setActiveTab('tagihan');
+                }
+              }} 
+            />
           )}
           
           {activeTab === 'pelanggan' && (

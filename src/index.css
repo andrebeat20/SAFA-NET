@@ -67,8 +67,12 @@
 
 @layer utilities {
   .glass {
-    @apply border border-slate-200/60 dark:border-slate-800/60 shadow-md;
-    background-color: var(--bg-secondary);
+    @apply backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.05)];
+    background-color: var(--glass-bg);
+  }
+  
+  .dark .glass {
+    @apply border-white/5 shadow-[0_8px_32px_0_rgba(0,0,0,0.3)];
   }
 
   .scrollbar-hide {

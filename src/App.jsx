@@ -105,16 +105,13 @@ function App() {
       <MeshBackground />
       
       <div className="relative z-10 flex flex-col h-dvh pb-20">
-        {/* Render TopBar only for Admins/Owners, or when on other tabs for non-admin users (FieldDashboard has its own FieldHeader) */}
-        {(user?.role === 'admin' || user?.role === 'owner' || activeTab !== 'home') && (
-          <TopBar 
-            customMonth={currentMonth} 
-            isAdmin={user?.role === 'admin' || user?.role === 'owner'} 
-            onMonthChange={setSelectedMonth}
-            isDarkMode={isDarkMode}
-            toggleDarkMode={toggleDarkMode}
-          />
-        )}
+        <TopBar 
+          customMonth={currentMonth} 
+          isAdmin={user?.role === 'admin' || user?.role === 'owner'} 
+          onMonthChange={setSelectedMonth}
+          isDarkMode={isDarkMode}
+          toggleDarkMode={toggleDarkMode}
+        />
         
         <main className="flex-1 overflow-y-auto animate-fade-in-up pt-6">
           {/* Dynamic Variant of HOME View */}

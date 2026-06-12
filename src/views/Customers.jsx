@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, Plus } from 'lucide-react';
 import CustomerCard from '../components/customer/CustomerCard';
 import { toast } from 'sonner';
 
-export default function Customers({ customers, onCustomerClick }) {
+export default function Customers({ customers, onCustomerClick, onAddClick }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('Semua'); // Semua, Lunas, Belum Bayar
 
@@ -18,6 +18,16 @@ export default function Customers({ customers, onCustomerClick }) {
     <div className="pb-24">
       {/* Static Header with Search */}
       <div className="bg-transparent px-5 py-6 space-y-5">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-black text-[var(--text-primary)]">Daftar Pelanggan</h2>
+          <button 
+            onClick={onAddClick}
+            className="flex items-center gap-2 bg-brand text-white px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider hover:brightness-110 transition-all shadow-md active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            Tambah
+          </button>
+        </div>
         <div className="relative group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-brand transition-colors" />
           <input 

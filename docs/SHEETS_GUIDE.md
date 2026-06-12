@@ -60,6 +60,60 @@ function doPost(e) {
         message: "Berhasil mengedit profil pelanggan di " + successCount + " tab bulan!"
       })).setMimeType(ContentService.MimeType.JSON);
     }
+    // --- AKSI 9: TAMBAH PELANGGAN (ADD CUSTOMER) ---
+    if (action === "add_customer") {
+      var name = data.name;
+      var address = data.address || "";
+      var packageName = data.package || "10 Mbps";
+      var price = data.price || 0;
+      var phone = data.phone || "";
+      var successCount = 0;
+      
+      for (var s = 0; s < sheets.length; s++) {
+        var sheet = sheets[s];
+        var lastRow = Math.min(sheet.getLastRow() + 5, 1000); 
+        var values = sheet.getRange(1, 2, lastRow, 1).getValues();
+        var totalRowIndex = -1;
+        
+        // Cari baris TOTAL
+        for (var i = 0; i < values.length; i++) {
+          var cellText = values[i][0] ? values[i][0].toString().toUpperCase().trim() : "";
+          if (cellText === "TOTAL") {
+            totalRowIndex = i + 1;
+            break;
+          }
+        }
+        
+        if (totalRowIndex !== -1) {
+          // Sisipkan baris kosong tepat di atas TOTAL
+          sheet.insertRowBefore(totalRowIndex);
+          
+          // Kloning format dari baris di atasnya
+          var numCols = sheet.getLastColumn();
+          if (numCols < 1) numCols = 20;
+          var sourceRange = sheet.getRange(totalRowIndex - 2, 1, 1, numCols);
+          var targetRange = sheet.getRange(totalRowIndex - 1, 1, 1, numCols);
+          sourceRange.copyTo(targetRange, SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
+          
+          // Isi data
+          sheet.getRange(totalRowIndex - 1, 1).setValue(noUrut);        // Kolom A
+          sheet.getRange(totalRowIndex - 1, 2).setValue(name);          // Kolom B
+          sheet.getRange(totalRowIndex - 1, 3).setValue(address);       // Kolom C
+          sheet.getRange(totalRowIndex - 1, 4).setValue(packageName);   // Kolom D
+          sheet.getRange(totalRowIndex - 1, 5).setValue(price);         // Kolom E
+          sheet.getRange(totalRowIndex - 1, 6).setValue(phone);         // Kolom F
+          sheet.getRange(totalRowIndex - 1, 7).setValue("BELUM BAYAR"); // Kolom G
+          sheet.getRange(totalRowIndex - 1, 11).setValue(price);        // Kolom K
+          
+          successCount++;
+        }
+      }
+      
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "success",
+        message: "Berhasil menambah pelanggan baru di " + successCount + " tab bulan!"
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
     
     // --- AKSI 2: HAPUS PELANGGAN ---
     if (action === "delete") {

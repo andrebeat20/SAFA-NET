@@ -12,12 +12,14 @@ import { useBilling } from './hooks/useBilling';
 import { useAuth } from './hooks/useAuth';
 import Login from './views/Login';
 import CustomerDetailSheet from './components/shared/CustomerDetailSheet';
+import CustomerAddSheet from './components/shared/CustomerAddSheet';
 import MeshBackground from './components/layout/MeshBackground';
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [selectedForDetail, setSelectedForDetail] = useState(null);
+  const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
     return localStorage.getItem('safanet_theme') === 'dark';
   });
@@ -130,7 +132,11 @@ function App() {
           )}
           
           {activeTab === 'pelanggan' && (
-            <Customers customers={customers} onCustomerClick={handleDetailClick} />
+            <Customers 
+              customers={customers} 
+              onCustomerClick={handleDetailClick} 
+              onAddClick={() => setIsAddSheetOpen(true)}
+            />
           )}
           
           {activeTab === 'tagihan' && (
@@ -193,6 +199,15 @@ function App() {
           }
         }}
         onCancelPayment={cancelPayment}
+      />
+
+      <CustomerAddSheet 
+        isOpen={isAddSheetOpen}
+        onClose={() => setIsAddSheetOpen(false)}
+        onAdd={async (newCustomer) => {
+          const success = await addCustomer(newCustomer);
+          if (success) setIsAddSheetOpen(false);
+        }}
       />
       
       <Toaster 

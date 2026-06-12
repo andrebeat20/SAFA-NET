@@ -430,6 +430,66 @@ export function useBilling() {
     return { totalTagihan, terkumpul, sisaPiutang, persentase, breakdown, totalCustomers };
   };
 
+  const addCustomer = async (newCustomerData) => {
+    toast.loading('Menambahkan pelanggan baru...', { id: 'add-customer' });
+    
+    // Auto-generate no_urut_excel
+    const maxNoUrut = customers.length > 0 
+      ? Math.max(...customers.map(c => c.no_urut_excel || 0)) 
+      : 0;
+    
+    const customerToInsert = {
+      no_urut_excel: maxNoUrut + 1,
+      name: newCustomerData.name,
+      address: newCustomerData.address || '',
+      phone: newCustomerData.phone || '',
+      package: newCustomerData.package || '10 Mbps',
+      price: newCustomerData.price || 0,
+      status: 'Belum Bayar'
+    };
+
+    const { error } = await supabase
+      .from('customers')
+      .insert([customerToInsert]);
+
+    if (error) {
+      toast.error('Gagal menambahkan pelanggan', { id: 'add-customer' });
+      return false;
+    }
+
+    toast.success('Pelanggan berhasil ditambahkan', { id: 'add-customer' });
+    fetchData();
+
+    // Background Sync Add to Google Sheets
+    const syncUrl = import.meta.env.VITE_SHEETS_SYNC_URL;
+    if (syncUrl) {
+      fetch(syncUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'add_customer',
+          no_urut_excel: customerToInsert.no_urut_excel,
+          name: customerToInsert.name,
+          address: customerToInsert.address,
+          package: customerToInsert.package,
+          price: customerToInsert.price,
+          phone: customerToInsert.phone
+        })
+      })
+      .then(res => res.json())
+      .then(resData => {
+        if (resData.status === 'success') {
+          toast.success('Pelanggan baru disinkronkan ke Google Sheets!');
+        } else {
+          console.error('Sheets Add Sync Error:', resData.message);
+        }
+      })
+      .catch(err => console.error('Failed to sync add to Sheets:', err));
+    }
+
+    return true;
+  };
+
   const updateCustomer = async (customerId, updatedFields) => {
     const originalCustomer = customers.find(c => c.id === customerId);
     if (!originalCustomer) return false;
@@ -550,6 +610,7 @@ export function useBilling() {
     getFinancialSummary,
     updateCustomer,
     deleteCustomer,
+    addCustomer,
     generateMonthlyTagihan
   };
 }

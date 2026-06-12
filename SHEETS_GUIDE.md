@@ -88,6 +88,55 @@ function doPost(e) {
       })).setMimeType(ContentService.MimeType.JSON);
     }
     
+    // --- AKSI 8: BATALKAN PEMBAYARAN (CANCEL PAYMENT) ---
+    if (action === "cancel_payment") {
+      var sheetName = data.bulan_tagihan;
+      var sheet = ss.getSheetByName(sheetName);
+      if (!sheet) {
+        return ContentService.createTextOutput(JSON.stringify({
+          status: "error",
+          message: "Tab bulan " + sheetName + " tidak ditemukan"
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      var lastRow = sheet.getLastRow();
+      var values = sheet.getRange(1, 1, lastRow, 1).getValues();
+      var targetRow = -1;
+      
+      for (var i = 0; i < values.length; i++) {
+        if (values[i][0] == noUrut) {
+          targetRow = i + 1; 
+          break;
+        }
+      }
+      
+      if (targetRow === -1) {
+        return ContentService.createTextOutput(JSON.stringify({
+          status: "error",
+          message: "Nomor urut " + noUrut + " tidak ditemukan di Kolom A"
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      // Ambil Harga dari Kolom E
+      var price = sheet.getRange(targetRow, 5).getValue();
+      
+      // Kembalikan Keterangan menjadi BELUM BAYAR
+      sheet.getRange(targetRow, 7).setValue("BELUM BAYAR");
+      
+      // Kosongkan kolom pembayaran (H, I, J)
+      sheet.getRange(targetRow, 8).setValue("");
+      sheet.getRange(targetRow, 9).setValue("");
+      sheet.getRange(targetRow, 10).setValue("");
+      
+      // Kembalikan nominal ke kolom BELUM BAYAR (K)
+      sheet.getRange(targetRow, 11).setValue(price);
+      
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "success",
+        message: "Pembayaran berhasil dibatalkan di Google Sheets!"
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     // --- AKSI 5: AMBIL DATA BULAN TERTENTU (FETCH SHEET) ---
     if (action === "fetch_sheet") {
       var targetSheetName = data.sheet_name; // e.g. "MEI 2026"
@@ -228,8 +277,8 @@ function doPost(e) {
         var belumBayarValues = [];
         
         for (var i = 0; i < numRows; i++) {
-          clearValues.push(["", "", "", ""]); // G, H, I, J
-          belumBayarValues.push([priceRange[i][0] || 0]); // K
+          clearValues.push(["BELUM BAYAR", "", "", ""]); // G (Keterangan = BELUM BAYAR), H, I, J (Kosong)
+          belumBayarValues.push([priceRange[i][0] || 0]); // K (BELUM BAYAR = Nominal Harga)
         }
         
         newSheet.getRange(startRow, 7, numRows, 4).setValues(clearValues);
@@ -507,3 +556,73 @@ function doGet(e) {
 ## 🛠️ Langkah 3: Berikan URL Web App Tersebut Kepada Saya
 
 Salin URL tersebut dan tempelkan (*paste*) di percakapan ini. Saya akan langsung memperbarui kode *frontend* SAFA-NET Anda agar setiap kali transaksi dicatat, ia otomatis menembakkan data pembayaran Anda ke Google Sheets secara real-time!
+
+---
+
+## 🪄 Langkah Tambahan: Script Tambah Pelanggan Otomatis (Opsional)
+
+Untuk mempermudah penambahan pelanggan secara manual di Google Sheets **tanpa merusak rumus TOTAL** di bagian bawah, Anda bisa menempelkan script `onEdit` ini tepat di bagian paling bawah kode Apps Script Anda (di bawah baris terakhir dari fungsi `doGet`):
+
+```javascript
+// --- AKSI 7: SCRIPT OTOMATIS GESER TABEL (ADD CUSTOMER) ---
+// Fungsi ini berjalan otomatis setiap kali Anda mengetik pelanggan baru
+function onEdit(e) {
+  try {
+    var sheet = e.source.getActiveSheet();
+    var range = e.range;
+    var row = range.getRow();
+    var col = range.getColumn();
+    
+    // Hanya berjalan jika kita mengetik di Kolom B (Nama Pelanggan)
+    if (col === 2 && e.value) {
+      
+      // Cari posisi baris "TOTAL" secara dinamis
+      var lastRow = Math.min(sheet.getLastRow() + 5, 1000); 
+      var values = sheet.getRange(1, 2, lastRow, 1).getValues();
+      var totalRowIndex = -1;
+      
+      for (var i = 0; i < values.length; i++) {
+        var cellText = values[i][0] ? values[i][0].toString().toUpperCase().trim() : "";
+        if (cellText === "TOTAL") {
+          totalRowIndex = i + 1;
+          break;
+        }
+      }
+      
+      // Jika baris yang Anda ketik adalah baris tepat 1 baris di atas TOTAL
+      if (totalRowIndex !== -1 && row === totalRowIndex - 1) {
+        
+        // 1. Sisipkan baris kosong baru di atas TOTAL (blok TOTAL aman bergeser ke bawah)
+        sheet.insertRowBefore(totalRowIndex);
+        
+        // 2. Kloning Format (Border, font, warna) dari baris Anda ke baris kosong yang baru
+        var numCols = sheet.getLastColumn();
+        if (numCols < 1) numCols = 20;
+        
+        var sourceRange = sheet.getRange(row, 1, 1, numCols);
+        var targetRange = sheet.getRange(totalRowIndex, 1, 1, numCols);
+        sourceRange.copyTo(targetRange, SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
+        
+        // 3. Kloning Auto-Nomor (opsional jika Kolom A adalah nomor urut)
+        var prevNo = parseInt(sheet.getRange(row - 1, 1).getValue());
+        if (!isNaN(prevNo)) {
+          sheet.getRange(row, 1).setValue(prevNo + 1); 
+        }
+        
+        // 4. Setel Status Awal Keterangan menjadi "BELUM BAYAR"
+        sheet.getRange(row, 7).setValue("BELUM BAYAR");
+        // Paket Default
+        sheet.getRange(row, 4).setValue("10 Mbps");
+      }
+    }
+  } catch (err) {
+    // Abaikan error
+  }
+}
+```
+
+> **Cara Kerja Script Ini:**
+> * **Deteksi Otomatis:** Setiap kali Anda mengisi nama pelanggan baru tepat di baris kosong di bawah pelanggan terakhir (baris 212 di contoh), script akan mendeteksi koordinat tersebut.
+> * **Geser Otomatis:** Script mencari posisi teks "TOTAL" secara dinamis, lalu menyisipkan baris baru (`insertRowBefore`) tepat di atasnya. Hal ini membuat blok ringkasan otomatis turun ke bawah dengan aman.
+> * **Kloning Format:** Script mengambil format tabel (garis border, font, alignment) dari baris di atasnya dan menerapkannya ke baris baru agar Anda tidak perlu membuat border manual lagi.
+> * **Rumus Aman:** Karena menggunakan fungsi bawaan Sheets `insertRow`, rumus seperti `=SUM(F$5:F212)` akan otomatis berubah secara mandiri menjadi `=SUM(F$5:F213)` tanpa merusak kalkulasi.

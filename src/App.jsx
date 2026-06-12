@@ -11,7 +11,6 @@ import PaymentBottomSheet from './components/shared/PaymentBottomSheet';
 import { useBilling } from './hooks/useBilling';
 import { useAuth } from './hooks/useAuth';
 import Login from './views/Login';
-import FieldDashboard from './views/FieldDashboard';
 import CustomerDetailSheet from './components/shared/CustomerDetailSheet';
 import MeshBackground from './components/layout/MeshBackground';
 
@@ -31,7 +30,8 @@ function App() {
     isSyncing,
     currentMonth,
     setSelectedMonth,
-    handlePayment, 
+    handlePayment,
+    cancelPayment, 
     manualSync,
     getFinancialSummary,
     updateCustomer,
@@ -192,6 +192,7 @@ function App() {
             if (success) setSelectedForDetail(null);
           }
         }}
+        onCancelPayment={cancelPayment}
       />
       
       <Toaster 

@@ -128,6 +128,77 @@ export function useBilling() {
     }
   };
 
+  const cancelPayment = async (customerId) => {
+    const customer = customers.find(c => c.id === customerId);
+    if (!customer) return;
+
+    // Optimistic UI Update
+    setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, status: 'Belum Bayar' } : c));
+
+    // 1. Update customer status in Supabase
+    const { error: updateError } = await supabase
+      .from('customers')
+      .update({ status: 'Belum Bayar' })
+      .eq('id', customerId);
+
+    if (updateError) {
+      toast.error('Gagal membatalkan pembayaran');
+      fetchData(); // revert
+      return;
+    }
+
+    // 2. Delete transaction record for this month
+    const { data: txData } = await supabase
+      .from('transactions')
+      .select('id')
+      .eq('customer_id', customerId)
+      .eq('bulan_tagihan', currentMonthName)
+      .order('date', { ascending: false })
+      .limit(1);
+
+    if (txData && txData.length > 0) {
+      await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', txData[0].id);
+    }
+
+    fetchData();
+
+    toast.success('Pembayaran Berhasil Dibatalkan', {
+      description: `${customer.name} dikembalikan ke Belum Bayar`
+    });
+
+    // 3. Background Sync to Google Sheets Web App
+    const syncUrl = import.meta.env.VITE_SHEETS_SYNC_URL;
+    if (syncUrl) {
+      fetch(syncUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify({
+          action: 'cancel_payment',
+          no_urut_excel: customer.no_urut_excel,
+          bulan_tagihan: currentMonthName
+        })
+      })
+      .then(res => res.json())
+      .then(resData => {
+        if (resData.status === 'success') {
+          toast.success('Google Sheets Berhasil Diperbarui (Batal Bayar)!');
+        } else {
+          console.error('Sheets Sync Error:', resData.message);
+          toast.error('Gagal Sinkronisasi Google Sheets: ' + resData.message);
+        }
+      })
+      .catch(err => {
+        console.error('Google Sheets Sync Failed:', err);
+        toast.error('Gagal terhubung ke Google Sheets');
+      });
+    }
+  };
+
   const manualSync = async (monthName) => {
     const targetMonth = typeof monthName === 'string' ? monthName : selectedMonth;
     setIsSyncing(true);
@@ -348,11 +419,6 @@ export function useBilling() {
     const sisaPiutang = totalTagihan - terkumpul;
     const persentase = totalTagihan > 0 ? (terkumpul / totalTagihan) * 100 : 0;
 
-    // Supabase returns columns exactly as they are. In mockData they were camelCase, 
-    // now we map to the exact Supabase columns if we want, or use our frontend object.
-    // Wait, transactions from Supabase have 'customer_id'. In the frontend table we mapped 'customerId'.
-    // Let's ensure the transactions mapped here use the correct column names from Supabase.
-    
     const breakdown = {
       keliling: transactions.filter(t => t.method === 'Keliling').reduce((sum, t) => sum + t.amount, 0),
       kantor: transactions.filter(t => t.method === 'Tunai Kantor' || t.method === 'Kantor').reduce((sum, t) => sum + t.amount, 0),
@@ -479,6 +545,7 @@ export function useBilling() {
     currentMonth: selectedMonth,
     setSelectedMonth,
     handlePayment,
+    cancelPayment,
     manualSync,
     getFinancialSummary,
     updateCustomer,

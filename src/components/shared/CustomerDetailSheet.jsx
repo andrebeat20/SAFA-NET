@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, MapPin, Phone, Package, CreditCard, Save, Trash2, Calendar } from 'lucide-react';
+import { X, User, MapPin, Phone, Package, CreditCard, Save, Trash2, Calendar, Undo2 } from 'lucide-react';
 
-export default function CustomerDetailSheet({ isOpen, onClose, customer, onUpdate, onDelete }) {
+export default function CustomerDetailSheet({ isOpen, onClose, customer, onUpdate, onDelete, onCancelPayment }) {
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -173,6 +173,22 @@ export default function CustomerDetailSheet({ isOpen, onClose, customer, onUpdat
                   <p className="text-xs font-black text-[var(--text-primary)] transition-colors">{customer.status}</p>
                 </div>
               </div>
+              {customer.status === 'Lunas' && onCancelPayment && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const confirmCancel = window.confirm('Apakah Anda yakin ingin membatalkan pembayaran ini?');
+                    if (confirmCancel) {
+                      onCancelPayment(customer.id);
+                      onClose();
+                    }
+                  }}
+                  className="px-3 py-2 bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 hover:bg-orange-200 transition-colors cursor-pointer"
+                >
+                  <Undo2 className="w-3.5 h-3.5" />
+                  Batal
+                </button>
+              )}
             </div>
           </form>
         </div>

@@ -1,6 +1,32 @@
-# 🛰️ SAFA.NET Billing Management System
+# 🛰️ SAFA-NET Billing Management System
+
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![React](https://img.shields.io/badge/React-18.x-61dafb.svg?logo=react)
+![Vite](https://img.shields.io/badge/Vite-5.x-646cff.svg?logo=vite)
+![Supabase](https://img.shields.io/badge/Supabase-DB-3ecf8e.svg?logo=supabase)
+![TailwindCSS](https://img.shields.io/badge/Tailwind-3.x-38b2ac.svg?logo=tailwind-css)
 
 Sistem manajemen penagihan dan pencatatan pelanggan WiFi terpusat yang dirancang khusus untuk mobilitas tinggi, performa maksimal, dan keamanan terjamin. Aplikasi dibangun menggunakan arsitektur modern **React (Vite) + Tailwind CSS + Supabase (PostgreSQL)** serta dilengkapi sinkronisasi dua arah otomatis dengan Google Sheets.
+
+---
+
+## 🚀 Quick Start
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/andrebeat20/SAFA-NET.git
+   cd SAFA-NET
+   ```
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+3. **Environment Setup:**
+   Duplicate `.env.example` to `.env.local` and configure your Supabase credentials.
+4. **Run Development Server:**
+   ```bash
+   npm run dev
+   ```
 
 ---
 

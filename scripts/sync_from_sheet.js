@@ -118,6 +118,7 @@ async function sync() {
     }
     
     console.log('🧹 Menghapus histori transaksi lama di Supabase...');
+    const { data: existingTxData } = await supabase.from('transactions').select('*');
     await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
     // 2. Masukkan data asli baru ke tabel customers
@@ -163,13 +164,17 @@ async function sync() {
               method = 'Keliling';
             }
 
+            const dateObj = new Date();
+            const currentMonthStr = `${dateObj.toLocaleDateString('id-ID', { month: 'long' }).toUpperCase()} ${dateObj.getFullYear()}`;
+            const oldTx = existingTxData?.find(t => t.customer_name === dbCust.name && t.bulan_tagihan === currentMonthStr);
+
             transactionsToInsert.push({
               customer_id: dbCust.id,
               customer_name: dbCust.name,
               amount: dbCust.price,
               method: method,
-              bulan_tagihan: 'JUNI 2026', // Fallback default month
-              date: new Date().toISOString()
+              bulan_tagihan: currentMonthStr, // Fallback default month
+              date: oldTx ? oldTx.date : new Date().toISOString()
             });
           }
         }

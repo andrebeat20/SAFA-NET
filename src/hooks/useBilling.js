@@ -7,7 +7,14 @@ export function useBilling() {
   const [transactions, setTransactions] = useState([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedMonth, setSelectedMonth] = useState('JUNI 2026');
+  const getCurrentMonthString = () => {
+    const date = new Date();
+    const monthName = date.toLocaleDateString('id-ID', { month: 'long' }).toUpperCase();
+    const year = date.getFullYear();
+    return `${monthName} ${year}`;
+  };
+
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthString());
 
   const currentMonthName = selectedMonth;
 
@@ -147,20 +154,20 @@ export function useBilling() {
       return;
     }
 
-    // 2. Delete transaction record for this month
+    // 2. Delete transaction record
     const { data: txData } = await supabase
       .from('transactions')
       .select('id')
       .eq('customer_id', customerId)
-      .eq('bulan_tagihan', currentMonthName)
-      .order('date', { ascending: false })
-      .limit(1);
+      .order('date', { ascending: false });
 
     if (txData && txData.length > 0) {
+      // Delete all transaction records for this customer
+      const txIds = txData.map(tx => tx.id);
       await supabase
         .from('transactions')
         .delete()
-        .eq('id', txData[0].id);
+        .in('id', txIds);
     }
 
     fetchData();
@@ -240,6 +247,9 @@ export function useBilling() {
 
       if (deleteCustomersError) throw deleteCustomersError;
 
+      // Fetch existing transactions to preserve their original timestamps
+      const { data: existingTxData } = await supabase.from('transactions').select('*');
+
       // Hapus transaksi lama juga agar selaras
       await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
@@ -286,13 +296,15 @@ export function useBilling() {
                   method = 'Keliling'; // fallback
                 }
 
+                const oldTx = existingTxData?.find(t => t.customer_name === dbCust.name && t.bulan_tagihan === targetMonth);
+
                 transactionsToInsert.push({
                   customer_id: dbCust.id,
                   customer_name: dbCust.name,
                   amount: dbCust.price,
                   method: method,
                   bulan_tagihan: targetMonth,
-                  date: new Date().toISOString()
+                  date: oldTx ? oldTx.date : new Date().toISOString()
                 });
               }
             }
@@ -420,9 +432,9 @@ export function useBilling() {
     const persentase = totalTagihan > 0 ? (terkumpul / totalTagihan) * 100 : 0;
 
     const breakdown = {
-      keliling: transactions.filter(t => t.method === 'Keliling').reduce((sum, t) => sum + t.amount, 0),
-      kantor: transactions.filter(t => t.method === 'Tunai Kantor' || t.method === 'Kantor').reduce((sum, t) => sum + t.amount, 0),
-      transfer: transactions.filter(t => t.method === 'Transfer').reduce((sum, t) => sum + t.amount, 0),
+      keliling: transactions.filter(t => t.method === 'Keliling' && customers.find(c => c.id === t.customer_id)?.status !== 'Belum Bayar').reduce((sum, t) => sum + t.amount, 0),
+      kantor: transactions.filter(t => (t.method === 'Tunai Kantor' || t.method === 'Kantor') && customers.find(c => c.id === t.customer_id)?.status !== 'Belum Bayar').reduce((sum, t) => sum + t.amount, 0),
+      transfer: transactions.filter(t => t.method === 'Transfer' && customers.find(c => c.id === t.customer_id)?.status !== 'Belum Bayar').reduce((sum, t) => sum + t.amount, 0),
     };
 
     const totalCustomers = customers.length;

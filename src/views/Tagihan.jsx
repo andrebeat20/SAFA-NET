@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import CustomerCard from '../components/customer/CustomerCard';
-import { AlertCircle, Bike, CreditCard, Building2, Search, X } from 'lucide-react';
+import { AlertCircle, Bike, CreditCard, Building2, Search, X, Plus } from 'lucide-react';
 
-export default function Tagihan({ customers, onPayment, currentMonth, onGenerate, isSyncing, isAdmin }) {
+export default function Tagihan({ customers, onPayment, currentMonth, onGenerate, isSyncing, isAdmin, onAddClick }) {
   const [searchTerm, setSearchTerm] = useState('');
 
   // 1. Get all static unpaid customers for empty check
@@ -41,22 +41,33 @@ export default function Tagihan({ customers, onPayment, currentMonth, onGenerate
               Data tagihan untuk periode <span className="text-rose-500 font-extrabold">{currentMonth}</span> belum dibuat di Google Spreadsheet.
             </p>
             
-            {onGenerate && (
-              <button
-                onClick={() => onGenerate(currentMonth)}
-                disabled={isSyncing}
-                className="mt-8 px-8 py-4 bg-rose-500 hover:bg-rose-600 disabled:bg-rose-300 text-white rounded-[24px] font-black uppercase tracking-wider text-xs shadow-lg shadow-rose-500/30 hover:shadow-xl hover:shadow-rose-500/40 active:scale-95 transition-all flex items-center gap-3"
-              >
-                {isSyncing ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Generating...
-                  </>
-                ) : (
-                  `Generate Tagihan ${currentMonth}`
-                )}
-              </button>
-            )}
+            <div className="flex gap-3 mt-8">
+              {isAdmin && (
+                <button
+                  onClick={onAddClick}
+                  className="px-6 py-4 bg-brand/10 hover:bg-brand/20 text-brand rounded-[24px] font-black uppercase tracking-wider text-xs active:scale-95 transition-all flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Tambah
+                </button>
+              )}
+              {onGenerate && (
+                <button
+                  onClick={() => onGenerate(currentMonth)}
+                  disabled={isSyncing}
+                  className="px-8 py-4 bg-rose-500 hover:bg-rose-600 disabled:bg-rose-300 text-white rounded-[24px] font-black uppercase tracking-wider text-xs shadow-lg shadow-rose-500/30 hover:shadow-xl hover:shadow-rose-500/40 active:scale-95 transition-all flex items-center gap-3"
+                >
+                  {isSyncing ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Generating...
+                    </>
+                  ) : (
+                    `Generate Tagihan ${currentMonth}`
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -76,18 +87,29 @@ export default function Tagihan({ customers, onPayment, currentMonth, onGenerate
             <h2 className="text-3xl font-black text-[var(--text-primary)] transition-colors">Daftar Tunggakan</h2>
           </div>
           
-          {onGenerate && (
-            <button
-              onClick={() => {
-                const confirmGen = window.confirm(`Apakah Anda yakin ingin mengenerate ulang / menyelaraskan tagihan periode ${currentMonth}?`);
-                if (confirmGen) onGenerate(currentMonth);
-              }}
-              disabled={isSyncing}
-              className="px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95"
-            >
-              {isSyncing ? 'Loading...' : 'Generate'}
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <button
+                onClick={onAddClick}
+                className="px-3 py-2.5 bg-brand/10 hover:bg-brand/20 text-brand rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Tambah
+              </button>
+            )}
+            {onGenerate && (
+              <button
+                onClick={() => {
+                  const confirmGen = window.confirm(`Apakah Anda yakin ingin mengenerate ulang / menyelaraskan tagihan periode ${currentMonth}?`);
+                  if (confirmGen) onGenerate(currentMonth);
+                }}
+                disabled={isSyncing}
+                className="px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95"
+              >
+                {isSyncing ? 'Loading...' : 'Generate'}
+              </button>
+            )}
+          </div>
         </div>
 
         {unpaidCustomers.length > 0 ? (

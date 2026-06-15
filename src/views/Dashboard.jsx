@@ -1,10 +1,23 @@
 import React from 'react';
 import StatCard from '../components/dashboard/StatCard';
-import { ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Plus } from 'lucide-react';
 
-export default function Dashboard({ summary, transactions, onViewAll }) {
+export default function Dashboard({ summary, transactions, onViewAll, onAddClick, isAdmin }) {
   return (
     <div className="pb-24 pt-6 px-4">
+      {/* Action Buttons */}
+      {isAdmin && (
+        <div className="flex gap-3 px-2 mb-6">
+          <button 
+            onClick={onAddClick}
+            className="flex-1 flex items-center justify-center gap-2 bg-brand text-white py-3.5 rounded-[20px] text-[11px] font-black uppercase tracking-wider hover:brightness-110 shadow-lg shadow-brand/20 active:scale-95 transition-all"
+          >
+            <Plus className="w-5 h-5" />
+            Pelanggan Baru
+          </button>
+        </div>
+      )}
+
       {/* Financial Summary */}
       <section className="mb-4">
         <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4 px-2 transition-colors">Ringkasan Bulan Ini</h2>

@@ -5,16 +5,19 @@ export default function LaporanTable({ customers, transactions }) {
   const totalHarga = customers?.reduce((sum, c) => sum + (c.price || 0), 0) || 0;
   
   const totalKeliling = customers?.reduce((sum, c) => {
+    if (c.status === 'Belum Bayar') return sum;
     const tx = transactions?.find(t => t.customer_id === c.id);
     return sum + (tx?.method === 'Keliling' ? (c.price || 0) : 0);
   }, 0) || 0;
 
   const totalKantor = customers?.reduce((sum, c) => {
+    if (c.status === 'Belum Bayar') return sum;
     const tx = transactions?.find(t => t.customer_id === c.id);
     return sum + ((tx?.method === 'Kantor' || tx?.method === 'Tunai Kantor') ? (c.price || 0) : 0);
   }, 0) || 0;
 
   const totalTransfer = customers?.reduce((sum, c) => {
+    if (c.status === 'Belum Bayar') return sum;
     const tx = transactions?.find(t => t.customer_id === c.id);
     return sum + (tx?.method === 'Transfer' ? (c.price || 0) : 0);
   }, 0) || 0;
@@ -48,10 +51,10 @@ export default function LaporanTable({ customers, transactions }) {
           <tbody className="divide-y divide-[var(--border-color)] transition-colors">
             {customers?.map((c, i) => {
               const tx = transactions?.find(t => t.customer_id === c.id);
-              const isKeliling = tx?.method === 'Keliling';
-              const isKantor = tx?.method === 'Kantor' || tx?.method === 'Tunai Kantor';
-              const isTransfer = tx?.method === 'Transfer';
               const isBelumBayar = c.status === 'Belum Bayar';
+              const isKeliling = !isBelumBayar && tx?.method === 'Keliling';
+              const isKantor = !isBelumBayar && (tx?.method === 'Kantor' || tx?.method === 'Tunai Kantor');
+              const isTransfer = !isBelumBayar && tx?.method === 'Transfer';
               
               // Keterangan badge render
               let keteranganBadge = null;

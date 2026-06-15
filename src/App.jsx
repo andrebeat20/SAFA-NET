@@ -128,6 +128,8 @@ function App() {
                   setActiveTab('tagihan');
                 }
               }} 
+              onAddClick={() => setIsAddSheetOpen(true)}
+              isAdmin={user?.role === 'admin'}
             />
           )}
           
@@ -136,6 +138,7 @@ function App() {
               customers={customers} 
               onCustomerClick={handleDetailClick} 
               onAddClick={() => setIsAddSheetOpen(true)}
+              isAdmin={user?.role === 'admin'}
             />
           )}
           
@@ -147,6 +150,7 @@ function App() {
               onGenerate={generateMonthlyTagihan}
               isSyncing={isSyncing}
               isAdmin={user?.role === 'admin'}
+              onAddClick={() => setIsAddSheetOpen(true)}
             />
           )}
           

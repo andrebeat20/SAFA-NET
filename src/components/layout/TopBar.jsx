@@ -9,17 +9,19 @@ export default function TopBar({ customMonth, isAdmin, onMonthChange, isDarkMode
   
   const currentMonth = customMonth;
 
-  // Daftar periode bulan JUNI - DESEMBER 2026
+  // Generate dynamic month list (1 month ago to 5 months ahead)
   const months = useMemo(() => {
-    return [
-      'JUNI 2026',
-      'JULI 2026',
-      'AGUSTUS 2026',
-      'SEPTEMBER 2026',
-      'OKTOBER 2026',
-      'NOVEMBER 2026',
-      'DESEMBER 2026'
-    ];
+    const list = [];
+    const date = new Date();
+    date.setMonth(date.getMonth() - 1);
+    
+    for (let i = 0; i < 7; i++) {
+      const monthName = date.toLocaleDateString('id-ID', { month: 'long' }).toUpperCase();
+      const year = date.getFullYear();
+      list.push(`${monthName} ${year}`);
+      date.setMonth(date.getMonth() + 1);
+    }
+    return list;
   }, []);
 
   const handleLogout = async () => {

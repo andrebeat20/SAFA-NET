@@ -139,8 +139,9 @@ export function useBilling() {
     const customer = customers.find(c => c.id === customerId);
     if (!customer) return;
 
-    // Optimistic UI Update
+    // Optimistic UI Update for customers AND transactions
     setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, status: 'Belum Bayar' } : c));
+    setTransactions(prev => prev.filter(t => !(t.customer_id === customerId && t.bulan_tagihan === currentMonthName)));
 
     // 1. Update customer status in Supabase
     const { error: updateError } = await supabase
@@ -154,15 +155,14 @@ export function useBilling() {
       return;
     }
 
-    // 2. Delete transaction record
+    // 2. Delete transaction record ONLY for the current month
     const { data: txData } = await supabase
       .from('transactions')
       .select('id')
       .eq('customer_id', customerId)
-      .order('date', { ascending: false });
+      .eq('bulan_tagihan', currentMonthName);
 
     if (txData && txData.length > 0) {
-      // Delete all transaction records for this customer
       const txIds = txData.map(tx => tx.id);
       await supabase
         .from('transactions')

@@ -75,7 +75,7 @@ export default function Dashboard({ summary, transactions, onViewAll, onAddClick
                 <div>
                   <h4 className="font-bold text-[var(--text-primary)] text-[15px] mb-0.5 transition-colors">{tx.customer_name}</h4>
                   <p className="text-xs font-medium text-slate-400 dark:text-slate-500">
-                    {new Date(tx.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} • {tx.method}
+                    {new Date(tx.date + (!tx.date.includes('Z') && !tx.date.includes('+') ? 'Z' : '')).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} • {tx.method}
                   </p>
                 </div>
               </div>

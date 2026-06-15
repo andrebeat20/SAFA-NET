@@ -409,27 +409,45 @@ function doPost(e) {
       // 3. Bersihkan pembayaran lama dan reset kolom BELUM BAYAR secara cepat (Batch Write)
       if (lastRow >= headerIndex + 2) {
         var startRow = headerIndex + 2;
-        var numRows = lastRow - startRow + 1;
         
-        // Kolom G (Keterangan) dikosongkan, H (KELILING), I (KANTOR), J (TRANSFER) disetel ""
-        var clearValues = [];
-        // Kolom K (BELUM BAYAR) diisi dengan nominal harga dari Kolom E (Harga)
-        var priceRange = newSheet.getRange(startRow, 5, numRows, 1).getValues();
-        var belumBayarValues = [];
+        // Cari baris pelanggan terakhir sebelum baris TOTAL agar tidak merusak format di bawah
+        var lastDataRow = startRow - 1;
+        var maxSearchRow = Math.min(lastRow, 1000);
+        var searchValues = newSheet.getRange(startRow, 1, maxSearchRow - startRow + 1, 4).getValues();
         
-        for (var i = 0; i < numRows; i++) {
-          clearValues.push(["BELUM BAYAR", "", "", ""]); // G (Keterangan = BELUM BAYAR), H, I, J (Kosong)
-          belumBayarValues.push([priceRange[i][0] || 0]); // K (BELUM BAYAR = Nominal Harga)
+        for (var i = 0; i < searchValues.length; i++) {
+          var rowText = (searchValues[i][0] + " " + searchValues[i][1] + " " + searchValues[i][2] + " " + searchValues[i][3]).toUpperCase();
+          if (rowText.indexOf("TOTAL") !== -1) {
+            break;
+          }
+          if (searchValues[i][1] && searchValues[i][1].toString().trim() !== "") {
+            lastDataRow = startRow + i;
+          }
         }
         
-        newSheet.getRange(startRow, 7, numRows, 4).setValues(clearValues);
-        newSheet.getRange(startRow, 11, numRows, 1).setValues(belumBayarValues);
+        if (lastDataRow >= startRow) {
+          var numRows = lastDataRow - startRow + 1;
+          
+          // Kolom G (Keterangan) dikosongkan, H (KELILING), I (KANTOR), J (TRANSFER) disetel ""
+          var clearValues = [];
+          // Kolom K (BELUM BAYAR) diisi dengan nominal harga dari Kolom E (Harga)
+          var priceRange = newSheet.getRange(startRow, 5, numRows, 1).getValues();
+          var belumBayarValues = [];
+          
+          for (var i = 0; i < numRows; i++) {
+            clearValues.push(["BELUM BAYAR", "", "", ""]); // G (Keterangan = BELUM BAYAR), H, I, J (Kosong)
+            belumBayarValues.push([priceRange[i][0] || 0]); // K (BELUM BAYAR = Nominal Harga)
+          }
+          
+          newSheet.getRange(startRow, 7, numRows, 4).setValues(clearValues);
+          newSheet.getRange(startRow, 11, numRows, 1).setValues(belumBayarValues);
+        }
       }
       
-      // 4. Reset tabel SETORAN TAHAP 1 - 30 (Kolom M ke U, baris 4 sampai 33)
+      // 4. Reset tabel SETORAN TAHAP 1 - 30 (Kolom M ke U, baris 4 sampai 34)
       if (lastRow >= 4) {
-        // Bersihkan area dari baris 4 ke bawah jika ada data lebih panjang
-        var clearRange = newSheet.getRange(4, 13, Math.max(lastRow - 3, 31), 9);
+        // HANYA bersihkan area tabel setoran (baris 4 sampai 34), jangan sampai ke bawah merusak rekap utama
+        var clearRange = newSheet.getRange(4, 13, 31, 9);
         clearRange.clearContent();
         clearRange.clearFormat();
         try { clearRange.breakApart(); } catch(e) {}

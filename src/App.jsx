@@ -38,7 +38,8 @@ function App() {
     getFinancialSummary,
     updateCustomer,
     deleteCustomer,
-    generateMonthlyTagihan
+    generateMonthlyTagihan,
+    addCustomer
   } = useBilling();
 
   // Dynamic Tab Redirection based on Permissions

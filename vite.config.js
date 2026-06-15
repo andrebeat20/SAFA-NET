@@ -5,4 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: './', // Tambahkan ini agar path aset di APK benar
+  build: {
+    chunkSizeWarningLimit: 1600,
+  },
 })

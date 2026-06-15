@@ -79,12 +79,6 @@ export default function Pengaturan() {
   const [appLogoInput, setAppLogoInput] = useState('');
   const [isSavingBranding, setIsSavingBranding] = useState(false);
 
-  // Fetch current branding on mount
-  useEffect(() => {
-    fetchBranding();
-    fetchUsers();
-  }, []);
-
   const fetchBranding = async () => {
     try {
       const { data, error } = await supabase
@@ -122,6 +116,12 @@ export default function Pengaturan() {
       setIsLoadingUsers(false);
     }
   };
+
+  // Fetch current branding on mount
+  useEffect(() => {
+    fetchBranding();
+    fetchUsers();
+  }, []);
 
   const handleAddUserClick = () => {
     setSelectedUser(null);

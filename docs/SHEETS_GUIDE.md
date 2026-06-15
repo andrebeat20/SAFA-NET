@@ -458,7 +458,7 @@ function doPost(e) {
       var tableRange = newSheet.getRange(4, 13, 31, 9); // Termasuk baris total
       tableRange.setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
       tableRange.setHorizontalAlignment("center");
-      newSheet.getRange(4, 20, 31, 2).setHorizontalAlignment("left"); // Keterangan rata kiri
+      newSheet.getRange(4, 20, 31, 2).setHorizontalAlignment("left").setWrap(true); // Keterangan rata kiri dan otomatis wrap text
       newSheet.getRange(totalRow, 13, 1, 9).setFontWeight("bold");
       
       // 5. Ambil data pelanggan baru hasil generate untuk dikirim balik ke Supabase

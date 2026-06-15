@@ -171,8 +171,19 @@ function doPost(e) {
         })).setMimeType(ContentService.MimeType.JSON);
       }
       
-      // Ambil Harga dari Kolom E
+      // Ambil Harga dan Nama dari Kolom E dan B
+      var customerName = sheet.getRange(targetRow, 2).getValue();
       var price = sheet.getRange(targetRow, 5).getValue();
+      
+      // Cek metode pembayaran sebelum dihapus (agar tahu mana yang harus dikurangi di laporan harian)
+      var kelVal = sheet.getRange(targetRow, 8).getValue() || 0;
+      var kanVal = sheet.getRange(targetRow, 9).getValue() || 0;
+      var transVal = sheet.getRange(targetRow, 10).getValue() || 0;
+      
+      var canceledMethod = "";
+      if (kelVal > 0) canceledMethod = "Keliling";
+      else if (kanVal > 0) canceledMethod = "Kantor";
+      else if (transVal > 0) canceledMethod = "Transfer";
       
       // Kembalikan Keterangan menjadi BELUM BAYAR
       sheet.getRange(targetRow, 7).setValue("BELUM BAYAR");
@@ -185,9 +196,75 @@ function doPost(e) {
       // Kembalikan nominal ke kolom BELUM BAYAR (K)
       sheet.getRange(targetRow, 11).setValue(price);
       
+      // --- PROSES MENGURANGI DARI TABEL HARIAN (SETORAN TAHAP) ---
+      if (canceledMethod !== "") {
+        var targetDailyRow = -1;
+        
+        // 1. Coba cari baris harian yang nama pelanggannya tertera di Keterangan (khusus Kantor)
+        if (canceledMethod === "Kantor") {
+          for (var r = 33; r >= 4; r--) {
+            var ketVal = sheet.getRange(r, 20).getValue() || "";
+            if (ketVal.indexOf(customerName) !== -1) {
+              targetDailyRow = r;
+              break;
+            }
+          }
+        }
+        
+        // 2. Jika tidak ketemu (atau Keliling/Transfer), gunakan baris HARI INI
+        if (targetDailyRow === -1) {
+          var todayStr = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), "dd-MMM-yy");
+          for (var r = 4; r <= 33; r++) {
+            var val = sheet.getRange(r, 13).getValue();
+            if (val !== "") {
+              var valStr = val instanceof Date ? Utilities.formatDate(val, ss.getSpreadsheetTimeZone(), "dd-MMM-yy") : val.toString();
+              if (valStr === todayStr) {
+                targetDailyRow = r;
+                break;
+              }
+            }
+          }
+        }
+        
+        // 3. Jika masih tidak ketemu (belum ada transaksi hari ini), cari baris TERAKHIR yang ada isinya
+        if (targetDailyRow === -1) {
+          for (var r = 33; r >= 4; r--) {
+            if (sheet.getRange(r, 13).getValue() !== "") {
+              targetDailyRow = r;
+              break;
+            }
+          }
+        }
+        
+        // Lakukan pengurangan nominal
+        if (targetDailyRow !== -1) {
+          if (canceledMethod === "Keliling") {
+            var currVal = sheet.getRange(targetDailyRow, 17).getValue() || 0;
+            sheet.getRange(targetDailyRow, 17).setValue(Math.max(0, currVal - price));
+          } else if (canceledMethod === "Kantor") {
+            var currVal = sheet.getRange(targetDailyRow, 18).getValue() || 0;
+            sheet.getRange(targetDailyRow, 18).setValue(Math.max(0, currVal - price));
+            
+            // Hapus nama dari keterangan (Kolom T)
+            var currKet = sheet.getRange(targetDailyRow, 20).getValue() || "";
+            if (currKet) {
+              var names = currKet.split(",").map(function(n) { return n.trim(); });
+              var nameIdx = names.indexOf(customerName.toString().trim());
+              if (nameIdx !== -1) {
+                names.splice(nameIdx, 1);
+                sheet.getRange(targetDailyRow, 20).setValue(names.join(", "));
+              }
+            }
+          } else if (canceledMethod === "Transfer") {
+            var currVal = sheet.getRange(targetDailyRow, 19).getValue() || 0;
+            sheet.getRange(targetDailyRow, 19).setValue(Math.max(0, currVal - price));
+          }
+        }
+      }
+      
       return ContentService.createTextOutput(JSON.stringify({
         status: "success",
-        message: "Pembayaran berhasil dibatalkan di Google Sheets!"
+        message: "Pembayaran berhasil dibatalkan di Google Sheets dan laporan harian telah disesuaikan!"
       })).setMimeType(ContentService.MimeType.JSON);
     }
 

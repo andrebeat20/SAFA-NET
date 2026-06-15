@@ -74,47 +74,39 @@ function doPost(e) {
         var lastRow = sheet.getLastRow();
         if (lastRow < 2) lastRow = 100;
         
-        // Ambil data untuk mencari kata kunci TOTAL di beberapa kolom awal (A, B, C, D)
+        // Ambil data untuk mencari baris pelanggan terakhir sebelum blok TOTAL
         var searchLimit = Math.min(lastRow + 20, 1000);
         var searchRange = sheet.getRange(1, 1, searchLimit, 4).getValues();
-        var totalRowIndex = -1;
         var lastDataRow = 1;
         
-        for (var i = searchRange.length - 1; i >= 0; i--) {
-          var rowText = (searchRange[i][0] + " " + searchRange[i][1] + " " + searchRange[i][2] + " " + searchRange[i][3]).toUpperCase();
+        for (var i = 0; i < searchRange.length; i++) {
+          var colB = searchRange[i][1] ? searchRange[i][1].toString().toUpperCase().trim() : "";
           
+          // Berhenti mencari jika menemukan kata TOTAL di kolom B (Atau kolom awal lainnya)
+          var rowText = (searchRange[i][0] + " " + searchRange[i][1] + " " + searchRange[i][2] + " " + searchRange[i][3]).toUpperCase();
           if (rowText.indexOf("TOTAL") !== -1) {
-            totalRowIndex = i + 1;
             break;
           }
           
-          // Catat baris terakhir yang ada namanya (Kolom B) jika bukan baris kosong
-          if (searchRange[i][1] && searchRange[i][1].toString().trim() !== "" && lastDataRow === 1) {
+          // Selama bukan baris kosong, catat sebagai baris pelanggan terakhir
+          if (colB !== "") {
             lastDataRow = i + 1;
           }
         }
         
-        var targetRow;
-        if (totalRowIndex !== -1) {
-          // Ada baris TOTAL, sisipkan di atasnya
-          sheet.insertRowBefore(totalRowIndex);
-          targetRow = totalRowIndex - 1;
-        } else {
-          // Tidak ada baris TOTAL, tambahkan di bawah data terakhir
-          targetRow = lastDataRow + 1;
-        }
+        // Sisipkan baris baru tepat DI BAWAH pelanggan terakhir (Misal di bawah "Amsal")
+        sheet.insertRowAfter(lastDataRow);
+        var targetRow = lastDataRow + 1;
         
-        // Kloning format dari baris di atas target
+        // Kloning format dari baris pelanggan terakhir ke baris baru agar border dan font sama persis
         var numCols = sheet.getLastColumn();
         if (numCols < 1) numCols = 20;
         
-        if (targetRow > 2) {
-          var sourceRange = sheet.getRange(targetRow - 1, 1, 1, numCols);
-          var destRange = sheet.getRange(targetRow, 1, 1, numCols);
-          sourceRange.copyTo(destRange, SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
-        }
+        var sourceRange = sheet.getRange(lastDataRow, 1, 1, numCols);
+        var destRange = sheet.getRange(targetRow, 1, 1, numCols);
+        sourceRange.copyTo(destRange, SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
         
-        // Isi data
+        // Isi data pelanggan baru
         sheet.getRange(targetRow, 1).setValue(noUrut);        // Kolom A
         sheet.getRange(targetRow, 2).setValue(name);          // Kolom B
         sheet.getRange(targetRow, 3).setValue(address);       // Kolom C
@@ -725,31 +717,38 @@ function onEdit(e) {
     // Hanya berjalan jika kita mengetik di Kolom B (Nama Pelanggan)
     if (col === 2 && e.value) {
       
-      // Cari posisi baris "TOTAL" secara dinamis di seluruh kolom awal
+      // Ambil data untuk mencari baris pelanggan terakhir sebelum blok TOTAL
       var searchLimit = Math.min(sheet.getLastRow() + 20, 1000); 
-      var searchValues = sheet.getRange(1, 1, searchLimit, 4).getValues();
-      var totalRowIndex = -1;
+      var searchRange = sheet.getRange(1, 1, searchLimit, 4).getValues();
+      var lastDataRow = 1;
       
-      for (var i = searchLimit - 1; i >= 0; i--) {
-        var rowText = (searchValues[i][0] + " " + searchValues[i][1] + " " + searchValues[i][2] + " " + searchValues[i][3]).toUpperCase();
+      for (var i = 0; i < searchRange.length; i++) {
+        var colB = searchRange[i][1] ? searchRange[i][1].toString().toUpperCase().trim() : "";
+        
+        // Berhenti mencari jika menemukan kata TOTAL
+        var rowText = (searchRange[i][0] + " " + searchRange[i][1] + " " + searchRange[i][2] + " " + searchRange[i][3]).toUpperCase();
         if (rowText.indexOf("TOTAL") !== -1) {
-          totalRowIndex = i + 1;
           break;
+        }
+        
+        // Selama bukan baris kosong, catat sebagai baris pelanggan terakhir
+        if (colB !== "") {
+          lastDataRow = i + 1;
         }
       }
       
-      // Jika baris yang Anda ketik adalah baris tepat 1 baris di atas TOTAL
-      if (totalRowIndex !== -1 && row === totalRowIndex - 1) {
+      // Jika baris yang Anda ketik adalah baris tepat 1 baris di bawah pelanggan terakhir (Baris kosong pertama)
+      if (row === lastDataRow + 1) {
         
-        // 1. Sisipkan baris kosong baru di atas TOTAL (blok TOTAL aman bergeser ke bawah)
-        sheet.insertRowBefore(totalRowIndex);
+        // 1. Sisipkan baris kosong baru di bawah baris yang sedang Anda ketik (Untuk cadangan/jarak ke TOTAL)
+        sheet.insertRowAfter(row);
         
-        // 2. Kloning Format (Border, font, warna) dari baris Anda ke baris kosong yang baru
+        // 2. Kloning Format (Border, font, warna) dari baris di atasnya
         var numCols = sheet.getLastColumn();
         if (numCols < 1) numCols = 20;
         
-        var sourceRange = sheet.getRange(row, 1, 1, numCols);
-        var targetRange = sheet.getRange(totalRowIndex, 1, 1, numCols);
+        var sourceRange = sheet.getRange(row - 1, 1, 1, numCols);
+        var targetRange = sheet.getRange(row, 1, 1, numCols);
         sourceRange.copyTo(targetRange, SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
         
         // 3. Kloning Auto-Nomor (opsional jika Kolom A adalah nomor urut)

@@ -211,7 +211,8 @@ export function useBilling() {
     setIsSyncing(true);
     const syncUrl = import.meta.env.VITE_SHEETS_SYNC_URL;
     if (!syncUrl) {
-      toast.error('URL Sinkronisasi Google Sheets tidak ditemukan di .env', { id: 'sheet-sync' });
+      console.warn('VITE_SHEETS_SYNC_URL tidak ditemukan, hanya memuat data dari Supabase.');
+      await fetchData();
       setIsSyncing(false);
       return;
     }
